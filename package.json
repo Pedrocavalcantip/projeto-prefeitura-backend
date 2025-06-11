@@ -1,0 +1,25 @@
+{
+  "name": "projeto-prefeitura-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pedrocavalcantip/projeto-prefeitura-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Pedrocavalcantip/projeto-prefeitura-backend/issues"
+  },
+  "homepage": "https://github.com/Pedrocavalcantip/projeto-prefeitura-backend#readme",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "pg": "^8.16.0"
+  }
+}
