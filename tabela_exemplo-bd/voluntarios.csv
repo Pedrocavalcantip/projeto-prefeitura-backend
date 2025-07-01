@@ -1,0 +1,3 @@
+"id_beneficiario","nome","email","whatsapp","receber_alertas"
+1,"João Silva","joao.silva@exemplo.com","+5581999999999",True
+2,"Maria Souza","maria.souza@exemplo.com","+5581888888888",True
