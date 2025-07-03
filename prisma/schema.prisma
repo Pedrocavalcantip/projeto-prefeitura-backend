@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -12,4 +6,39 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model produtos {
+  id_produto          Int                   @id @default(autoincrement())
+  nome_ong            String                @db.VarChar(100)
+  email_ong           String                @db.VarChar(255)
+  whatsapp_ong        String                @db.VarChar(20)
+  instagram_ong       String?               @db.VarChar(50)
+  urgencia            String                @db.VarChar(20)
+  tipo_item           String                @db.VarChar(20)
+  prazo_necessidade   DateTime              @db.Date
+  descricao           String
+  criado_em           DateTime?             @default(now()) @db.Timestamp(6)
+  realocacoes_produto realocacoes_produto[]
+}
+
+model realocacoes_produto {
+  id_realocacao        Int       @id @default(autoincrement())
+  id_produto           Int
+  nome_ong_origem      String    @db.VarChar(100)
+  email_ong_origem     String    @db.VarChar(255)
+  whatsapp_ong_origem  String    @db.VarChar(20)
+  instagram_ong_origem String?   @db.VarChar(50)
+  data_post            DateTime? @default(now()) @db.Timestamp(6)
+  observacoes          String?
+  produtos             produtos  @relation(fields: [id_produto], references: [id_produto], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model voluntarios {
+  id_beneficiario Int     @id @default(autoincrement())
+  nome            String  @db.VarChar(100)
+  email           String  @unique @db.VarChar(255)
+  whatsapp        String  @db.VarChar(20)
+  receber_alertas Boolean @default(true)
 }
