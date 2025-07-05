@@ -2,7 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 
 // Importa o nosso router de ONGs
-const ongsRouter = require('./src/routes/ongs.routes.js');
+const doacoesRouter = require('./src/routes/doacoes.routes.js');
 
 dotenv.config();
 
@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 });
 
 // Usando o router de ONGs
-app.use('/ongs', ongsRouter);
+app.use('/doacoes', doacoesRouter);
 
 app.listen(port, () => {
     console.log(`Servidor rodando na porta http://localhost:${port}`);
