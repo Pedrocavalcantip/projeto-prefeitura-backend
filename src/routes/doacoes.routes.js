@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
-const ongsRouter = Router();
+const doacoesRouter = Router();
 
 // Futuras rotas aqui
 
-module.exports = ongsRouter;
+module.exports = doacoesRouter;
