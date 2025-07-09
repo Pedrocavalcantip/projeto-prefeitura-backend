@@ -16,9 +16,8 @@ DROP TABLE IF EXISTS voluntarios;
 
 -- Tabela de voluntários que recebem alertas de doação
 CREATE TABLE voluntarios (
-    id_beneficiario SERIAL PRIMARY KEY,
+    --id_beneficiario SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
     whatsapp VARCHAR(20) NOT NULL,
     receber_alertas BOOLEAN NOT NULL DEFAULT TRUE);
 
@@ -48,8 +47,8 @@ CREATE TABLE realocacoes_produto (
 
 -- Inserção de dados de exemplo
 INSERT INTO voluntarios (nome, email, whatsapp, receber_alertas) VALUES
-('João Silva', 'joao.silva@exemplo.com', '+5581999999999', TRUE),
-('Maria Souza', 'maria.souza@exemplo.com', '+5581888888888', TRUE);
+('João Silva', '+5581999999999', TRUE),
+('Maria Souza', '+5581888888888', TRUE);
 
 INSERT INTO produtos (
     nome_ong, email_ong, whatsapp_ong, instagram_ong, tipo_item,urgencia, prazo_necessidade, descricao
