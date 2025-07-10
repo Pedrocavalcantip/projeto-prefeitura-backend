@@ -14,10 +14,12 @@ model produtos {
   email_ong           String                @db.VarChar(255)
   whatsapp_ong        String                @db.VarChar(20)
   instagram_ong       String?               @db.VarChar(50)
+  facebook_ong        String?               @db.VarChar(50)
   urgencia            String                @db.VarChar(20)
   tipo_item           String                @db.VarChar(20)
-  prazo_necessidade   DateTime              @db.Date
+  prazo_necessidade   DateTime?             @db.Date
   descricao           String
+  url_imagem          String?
   criado_em           DateTime?             @default(now()) @db.Timestamp(6)
   realocacoes_produto realocacoes_produto[]
 }
@@ -37,7 +39,6 @@ model realocacoes_produto {
 model voluntarios {
   id_beneficiario Int     @id @default(autoincrement())
   nome            String  @db.VarChar(100)
-  email           String  @unique @db.VarChar(255)
   whatsapp        String  @db.VarChar(20)
   receber_alertas Boolean @default(true)
 }
