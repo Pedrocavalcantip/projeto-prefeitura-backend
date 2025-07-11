@@ -3,24 +3,65 @@ const prisma = require('../config/database');
 
 // Função para buscar TODAS as doações no banco
 const findAllDoacoesService = async () => {
-    const doacoes = await prisma.produtos.findMany();
+    console.log('🔍 Buscando doações com dados da ONG...');
+    const doacoes = await prisma.produtos.findMany({
+        // Use 'include' para trazer os dados da ONG junto
+        include: {
+            ong: {
+                select: {
+                    id_ong: true,
+                    nome: true,
+                    email: true,
+                    whatsapp: true,
+                    instagram: true,
+                    facebook: true,
+                    site: true,
+                    logo_url: true
+                }
+            }
+        },
+    });
+    console.log('📊 Doações encontradas:', doacoes.length);
     return doacoes;
 };
 
 // Função para buscar UMA doação pelo seu ID
 const findByIdDoacaoService = async (id) => {
-    const doacao = await prisma.produtos.findUnique({ where: { id_produto: Number(id) } });
+    const doacao = await prisma.produtos.findUnique({ 
+        where: { id_produto: Number(id) },
+        include: {
+            ong: true,
+        },
+    });
     return doacao;
 };
 
 // Função para CRIAR uma nova doação
-const createDoacaoService = async (dadosDaNovaDoacao) => {
-    const doacaoCriada = await prisma.produtos.create({ data: dadosDaNovaDoacao });
+const createDoacaoService = async (dadosDaNovaDoacao, ongId) => {
+    // Adicione o ong_id que veio do token aos dados da doação
+    const dadosComOng = {
+        ...dadosDaNovaDoacao,
+        ong_id: ongId,
+    };
+    const doacaoCriada = await prisma.produtos.create({ data: dadosComOng });
     return doacaoCriada;
 };
 
 // Função para ATUALIZAR uma doação
-const updateDoacaoService = async (id, dadosParaEditar) => {
+const updateDoacaoService = async (id, dadosParaEditar, ongId) => {
+    // Primeiro, verifica se a doação pertence à ONG logada
+    const doacaoExistente = await prisma.produtos.findUnique({
+        where: { id_produto: Number(id) }
+    });
+    
+    if (!doacaoExistente) {
+        throw new Error('Doação não encontrada');
+    }
+    
+    if (doacaoExistente.ong_id !== ongId) {
+        throw new Error('Você não tem permissão para editar esta doação');
+    }
+    
     const doacaoAtualizada = await prisma.produtos.update({
         where: { id_produto: Number(id) },
         data: dadosParaEditar,
@@ -29,7 +70,20 @@ const updateDoacaoService = async (id, dadosParaEditar) => {
 };
 
 // Função para APAGAR uma doação
-const deleteDoacaoService = async (id) => {
+const deleteDoacaoService = async (id, ongId) => {
+    // Primeiro, verifica se a doação pertence à ONG logada
+    const doacaoExistente = await prisma.produtos.findUnique({
+        where: { id_produto: Number(id) }
+    });
+    
+    if (!doacaoExistente) {
+        throw new Error('Doação não encontrada');
+    }
+    
+    if (doacaoExistente.ong_id !== ongId) {
+        throw new Error('Você não tem permissão para deletar esta doação');
+    }
+    
     await prisma.produtos.delete({ where: { id_produto: Number(id) } });
 };
 
