@@ -7,33 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+// --- MODELO PARA ONGS ---
+model ongs {
+  id_ong    Int       @id @default(autoincrement())
+  nome      String    @db.VarChar(100)
+  email     String    @unique @db.VarChar(255) // Essencial para o login
+  whatsapp  String?   @db.VarChar(20)
+  instagram String?   @db.VarChar(50)
+  facebook  String?   @db.VarChar(50)
+  site      String?   @db.Text
+  logo_url  String?   @db.Text
+
+  produtos  produtos[] // Relação: Uma ONG pode ter muitas doações.
+}
+
+// --- MODELO DE PRODUTOS ---
 model produtos {
-  id_produto          Int                   @id @default(autoincrement())
-  nome_ong            String                @db.VarChar(100)
-  email_ong           String                @db.VarChar(255)
-  whatsapp_ong        String                @db.VarChar(20)
-  instagram_ong       String?               @db.VarChar(50)
-  facebook_ong        String?               @db.VarChar(50)
-  urgencia            String                @db.VarChar(20)
-  tipo_item           String                @db.VarChar(20)
-  prazo_necessidade   DateTime?             @db.Date
-  descricao           String
-  url_imagem          String?
-  criado_em           DateTime?             @default(now()) @db.Timestamp(6)
+  id_produto        Int       @id @default(autoincrement())
+  titulo            String    @db.VarChar(150)
+  descricao         String    @db.Text
+  urgencia          String    @db.VarChar(20)
+  tipo_item         String    @db.VarChar(50)
+  url_imagem        String?   @db.Text
+  prazo_necessidade DateTime? @db.Date
+  criado_em         DateTime? @default(now()) @db.Timestamp(6)
+
+  // A conexão com a tabela de ONGs.
+  ong_id            Int
+  ong               ongs      @relation(fields: [ong_id], references: [id_ong])
+
   realocacoes_produto realocacoes_produto[]
 }
 
 model realocacoes_produto {
-  id_realocacao        Int       @id @default(autoincrement())
+  id_realocacao        Int      @id @default(autoincrement())
   id_produto           Int
-  nome_ong_origem      String    @db.VarChar(100)
-  email_ong_origem     String    @db.VarChar(255)
-  whatsapp_ong_origem  String    @db.VarChar(20)
-  instagram_ong_origem String?   @db.VarChar(50)
+  nome_ong_origem      String   @db.VarChar(100)
+  email_ong_origem     String   @db.VarChar(255)
+  whatsapp_ong_origem  String?  @db.VarChar(20)
+  instagram_ong_origem String?  @db.VarChar(50)
   data_post            DateTime? @default(now()) @db.Timestamp(6)
-  observacoes          String?
-  produtos             produtos  @relation(fields: [id_produto], references: [id_produto], onDelete: NoAction, onUpdate: NoAction)
+  observacoes          String?  @db.Text
+  produtos             produtos @relation(fields: [id_produto], references: [id_produto], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model voluntarios {
