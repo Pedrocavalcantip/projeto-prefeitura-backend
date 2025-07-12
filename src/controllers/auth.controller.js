@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
 
 exports.login = async (req, res) => {
+
     const { email, password } = req.body;
 
     try {
@@ -69,4 +70,5 @@ exports.login = async (req, res) => {
         console.error('❌ Erro no processo de login:', error);
         return res.status(500).json({ erro: 'Erro interno no servidor.' });
     }
+
 };

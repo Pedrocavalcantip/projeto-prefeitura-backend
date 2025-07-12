@@ -1,28 +1,21 @@
 const { Router } = require('express');
-
-// Importa o nosso controller, que já tem todas as funções prontas
+const verificarToken = require('../middlewares/authMiddleware');
 const doacoesController = require('../controllers/doacoes.controller.js');
-// Importa o middleware de autenticação
-const verificarToken = require('../middlewares/authMiddleware.js');
+
 
 const doacoesRouter = Router();
 
-// --- MAPEAMENTO DAS ROTAS ---
-
-// Quando uma requisição GET chegar em '/doacoes', chame a função findAll do controller.
+// Rotas públicas
 doacoesRouter.get('/', doacoesController.findAll);
-
-// Quando uma requisição GET chegar em '/doacoes/1' (ou outro id), chame a função findById.
 doacoesRouter.get('/:id', doacoesController.findById);
 
-// Quando uma requisição POST chegar em '/doacoes', chame a função create (com autenticação).
-doacoesRouter.post('/', verificarToken, doacoesController.create);
 
-// Quando uma requisição PUT chegar em '/doacoes/1', chame a função update (com autenticação).
-doacoesRouter.put('/:id', verificarToken, doacoesController.update);
+// Rotas protegidas (aplicando middleware)
+doacoesRouter.use(verificarToken);
 
-// Quando uma requisição DELETE chegar em '/doacoes/1', chame a função deleteDoacao (com autenticação).
-doacoesRouter.delete('/:id', verificarToken, doacoesController.deleteDoacao);
+doacoesRouter.post('/', doacoesController.create);
+doacoesRouter.put('/:id', doacoesController.update);
+doacoesRouter.delete('/:id', doacoesController.deleteDoacao);
 
 
 module.exports = doacoesRouter;
