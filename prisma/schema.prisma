@@ -23,6 +23,7 @@ model ongs {
 
 // --- MODELO DE PRODUTOS ---
 model produtos {
+
   id_produto        Int       @id @default(autoincrement())
   titulo            String    @db.VarChar(150)
   descricao         String    @db.Text
@@ -36,10 +37,13 @@ model produtos {
   ong_id            Int
   ong               ongs      @relation(fields: [ong_id], references: [id_ong])
 
+
   realocacoes_produto realocacoes_produto[]
+
 }
 
 model realocacoes_produto {
+
   id_realocacao        Int      @id @default(autoincrement())
   id_produto           Int
   nome_ong_origem      String   @db.VarChar(100)
@@ -49,6 +53,7 @@ model realocacoes_produto {
   data_post            DateTime? @default(now()) @db.Timestamp(6)
   observacoes          String?  @db.Text
   produtos             produtos @relation(fields: [id_produto], references: [id_produto], onDelete: NoAction, onUpdate: NoAction)
+
 }
 
 model voluntarios {
