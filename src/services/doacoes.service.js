@@ -48,26 +48,31 @@ const createDoacaoService = async (dadosDaNovaDoacao, ongId) => {
 };
 
 // Função para ATUALIZAR uma doação
+
 const updateDoacaoService = async (id, dadosParaEditar, ongId) => {
-    // Primeiro, verifica se a doação pertence à ONG logada
-    const doacaoExistente = await prisma.produtos.findUnique({
-        where: { id_produto: Number(id) }
-    });
-    
-    if (!doacaoExistente) {
-        throw new Error('Doação não encontrada');
-    }
-    
-    if (doacaoExistente.ong_id !== ongId) {
-        throw new Error('Você não tem permissão para editar esta doação');
-    }
-    
-    const doacaoAtualizada = await prisma.produtos.update({
-        where: { id_produto: Number(id) },
-        data: dadosParaEditar,
-    });
-    return doacaoAtualizada;
+  const doacaoExistente = await prisma.produtos.findUnique({
+    where: { id_produto: Number(id) },
+  });
+
+  if (!doacaoExistente) {
+    throw new Error('Doação não encontrada');
+  }
+
+  if (doacaoExistente.ong_id !== ongId) {
+    throw new Error('Você não tem permissão para editar esta doação');
+  }
+
+  // Remover campos que não podem ser alterados
+  const { id_produto, criado_em, ...dadosLimpos } = dadosParaEditar;
+
+  const doacaoAtualizada = await prisma.produtos.update({
+    where: { id_produto: Number(id) },
+    data: dadosLimpos,
+  });
+
+  return doacaoAtualizada;
 };
+
 
 // Função para APAGAR uma doação
 const deleteDoacaoService = async (id, ongId) => {
