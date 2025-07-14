@@ -15,6 +15,9 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
+const realocacoesRoutes = require('./src/routes/realocacoes.routes');
+app.use('/realocacoes', realocacoesRoutes);
+
 app.get('/', (req, res) => {
     res.send('Servidor do Hub de Doações está no ar!');
 });
