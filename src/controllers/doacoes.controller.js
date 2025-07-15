@@ -3,7 +3,8 @@ const doacoesService = require('../services/doacoes.service.js');
 // Buscar todas as doações
 const findAll = async (req, res) => {
   try {
-    const doacoes = await doacoesService.findAllDoacoesService();
+    const filtros = req.query;
+    const doacoes = await doacoesService.findAllDoacoesService(filtros);
     res.status(200).json(doacoes);
   } catch (error) {
     res.status(500).json({ message: error.message });

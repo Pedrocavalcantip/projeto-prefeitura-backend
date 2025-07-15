@@ -1,7 +1,27 @@
 const prisma = require('../config/database');
 
 // Buscar todas as realocações com dados do produto
-const findAllService = async () => {
+const findAllService = async (filtros) => {
+  const {
+    tipo_item,
+    titulo,
+    urgencia,
+    prazo_necessidade,
+    ordem,
+    ordenarPor,
+    filtroEspecial,     // Ex: 'prestes_a_vencer,lancado_recentemente'
+    id_ong              // ← este é o novo filtro
+  } = filtros;
+
+  const agora = new Date();
+  const dataFutura = new Date(agora);
+  dataFutura.setDate(agora.getDate() + 15);
+
+  const dataPassada = new Date(agora);
+  dataPassada.setDate(agora.getDate() - 15);
+
+  const filtrosAtivos = filtroEspecial ? filtroEspecial.split(',') : [];
+
   return await prisma.realocacoes_produto.findMany({
     include: {
       produtos: {
@@ -9,12 +29,49 @@ const findAllService = async () => {
           id_produto: true,
           titulo: true,
           descricao: true,
-          tipo_item: true
+          tipo_item: true,
+          urgencia: true,
+          prazo_necessidade: true,
+          criado_em: true,
+          ong_id: true // ← você pode incluir se quiser ver esse dado no retorno
         }
+      }
+    },
+    orderBy: ordenarPor ? {
+      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc'
+    } : undefined,
+    where: {
+      produtos: {
+        ...(tipo_item && { tipo_item }),
+        ...(urgencia && { urgencia }),
+        ...(id_ong && { ong_id: Number(id_ong) }), // ← nova verificação
+        ...(titulo && {
+          titulo: {
+            contains: titulo,
+            mode: 'insensitive'
+          }
+        }),
+        ...(prazo_necessidade && {
+          prazo_necessidade: {
+            gte: new Date(prazo_necessidade)
+          }
+        }),
+        ...(filtrosAtivos.includes('prestes_a_vencer') && {
+          prazo_necessidade: {
+            lte: dataFutura
+          }
+        }),
+        ...(filtrosAtivos.includes('lancado_recentemente') && {
+          criado_em: {
+            gte: dataPassada
+          }
+        })
       }
     }
   });
 };
+
+
 
 // Buscar uma realocação pelo ID
 const findByIdService = async (id) => {

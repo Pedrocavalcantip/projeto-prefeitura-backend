@@ -2,28 +2,61 @@
 const prisma = require('../config/database');
 
 // Função para buscar TODAS as doações no banco
-const findAllDoacoesService = async () => {
-    console.log('🔍 Buscando doações com dados da ONG...');
-    const doacoes = await prisma.produtos.findMany({
-        // Use 'include' para trazer os dados da ONG junto
-        include: {
-            ong: {
-                select: {
-                    id_ong: true,
-                    nome: true,
-                    email: true,
-                    whatsapp: true,
-                    instagram: true,
-                    facebook: true,
-                    site: true,
-                    logo_url: true
-                }
-            }
-        },
-    });
-    console.log('📊 Doações encontradas:', doacoes.length);
-    return doacoes;
+const { addDays, subDays } = require('date-fns');
+
+const findAllDoacoesService = async (filtros) => {
+  const {
+    tipo_item,
+    titulo,
+    urgencia,
+    ordem,
+    ong_id,
+    ordenarPor,
+    prestesAVencer,
+    lancadoRecentemente
+  } = filtros;
+
+  const hoje = new Date();
+  const limiteVencimento = addDays(hoje, 15); // produtos com prazo até 15 dias
+  const limiteCriacao = subDays(hoje, 15);    // criados nos últimos 15 dias
+
+  return await prisma.produtos.findMany({
+    include: {
+      ong: {
+        select: {
+          id_ong: true,
+          nome: true,
+          email: true
+        }
+      }
+    },
+    orderBy: ordenarPor ? {
+      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc'
+    } : undefined,
+    where: {
+      ...(tipo_item && { tipo_item }),
+      ...(urgencia && { urgencia }),
+      ...(ong_id && { ong_id: Number(ong_id) }),
+      ...(titulo && {
+        titulo: {
+          contains: titulo,
+          mode: 'insensitive'
+        }
+      }),
+      ...(prestesAVencer && {
+        prazo_necessidade: {
+          lte: limiteVencimento
+        }
+      }),
+      ...(lancadoRecentemente && {
+        criado_em: {
+          gte: limiteCriacao
+        }
+      })
+    }
+  });
 };
+
 
 // Função para buscar UMA doação pelo seu ID
 const findByIdDoacaoService = async (id) => {

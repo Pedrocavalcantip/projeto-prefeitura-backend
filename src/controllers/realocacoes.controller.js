@@ -3,7 +3,8 @@ const service = require('../services/realocacoes.service');
 // Buscar todas as realocações
 const findAll = async (req, res) => {
   try {
-    const lista = await service.findAllService();
+    const filtros = req.query;
+    const lista = await service.findAllService(filtros);
     res.status(200).json(lista);
   } catch (e) {
     res.status(500).json({ erro: e.message });
