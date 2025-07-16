@@ -1,9 +1,10 @@
 // Importa a nossa conexão com o banco que você já criou
 const prisma = require('../config/database');
 
-// Função para buscar TODAS as doações no banco
-const { addDays, subDays } = require('date-fns');
+//Biblioteca para fazer a contagem do tempo
+const { addDays } = require('date-fns');
 
+// Função para buscar TODAS as doações no banco e fazer a filtragem
 const findAllDoacoesService = async (filtros) => {
   const {
     tipo_item,
@@ -12,27 +13,36 @@ const findAllDoacoesService = async (filtros) => {
     ordem,
     ong_id,
     ordenarPor,
-    prestesAVencer,
-    lancadoRecentemente
-  } = filtros;
+    prestesAVencer
+  } = filtros; // Coisas que iremos usar durante o processo
 
   const hoje = new Date();
-  const limiteVencimento = addDays(hoje, 15); // produtos com prazo até 15 dias
-  const limiteCriacao = subDays(hoje, 15);    // criados nos últimos 15 dias
+  const limiteVencimento = addDays(hoje, 14); // produtos com prazo até 14 dias
+  
 
+  //
   return await prisma.produtos.findMany({
     include: {
-      ong: {
-        select: {
-          id_ong: true,
-          nome: true,
-          email: true
-        }
+        ong: {
+          select: {
+              id_ong: true,
+              nome: true,
+              email: true,
+              whatsapp: true,
+              instagram: true,
+              facebook: true,
+              site: true,
+              logo_url: true
+      
+          }
       }
     },
+
+    //Aqui faz a ordenagem, tu podendo dar preferência para uma urgênciencia de alta até baixa
     orderBy: ordenarPor ? {
-      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc'
+      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc' 
     } : undefined,
+    // Aqui ocorre a checagem se o que você escolheu é igual ao da ong 
     where: {
       ...(tipo_item && { tipo_item }),
       ...(urgencia && { urgencia }),
@@ -46,11 +56,6 @@ const findAllDoacoesService = async (filtros) => {
       ...(prestesAVencer && {
         prazo_necessidade: {
           lte: limiteVencimento
-        }
-      }),
-      ...(lancadoRecentemente && {
-        criado_em: {
-          gte: limiteCriacao
         }
       })
     }

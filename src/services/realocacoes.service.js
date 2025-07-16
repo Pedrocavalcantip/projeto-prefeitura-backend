@@ -1,26 +1,22 @@
 const prisma = require('../config/database');
 
+//Biblioteca para fazer a contagem do tempo
+const { addDays} = require('date-fns');
+
 // Buscar todas as realocações com dados do produto
 const findAllService = async (filtros) => {
   const {
     tipo_item,
     titulo,
     urgencia,
-    prazo_necessidade,
     ordem,
+    ong_id,
     ordenarPor,
-    filtroEspecial,     // Ex: 'prestes_a_vencer,lancado_recentemente'
-    id_ong              // ← este é o novo filtro
+    prestesAVencer           
   } = filtros;
 
-  const agora = new Date();
-  const dataFutura = new Date(agora);
-  dataFutura.setDate(agora.getDate() + 15);
-
-  const dataPassada = new Date(agora);
-  dataPassada.setDate(agora.getDate() - 15);
-
-  const filtrosAtivos = filtroEspecial ? filtroEspecial.split(',') : [];
+  const hoje = new Date();
+  const limiteVencimento = addDays(hoje, 14); // produtos com prazo até 14 dias
 
   return await prisma.realocacoes_produto.findMany({
     include: {
@@ -33,39 +29,34 @@ const findAllService = async (filtros) => {
           urgencia: true,
           prazo_necessidade: true,
           criado_em: true,
-          ong_id: true // ← você pode incluir se quiser ver esse dado no retorno
+          ong_id: true 
         }
       }
     },
+
+
+    //Aqui faz a ordenagem, tu podendo dar preferência para uma urgênciencia de alta até baixa
     orderBy: ordenarPor ? {
       [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc'
     } : undefined,
+
+    // Aqui ocorre a checagem se o que você escolheu é igual ao da ong 
     where: {
       produtos: {
         ...(tipo_item && { tipo_item }),
         ...(urgencia && { urgencia }),
-        ...(id_ong && { ong_id: Number(id_ong) }), // ← nova verificação
+        ...(ong_id && { ong_id: Number(ong_id) }), 
         ...(titulo && {
           titulo: {
             contains: titulo,
             mode: 'insensitive'
           }
         }),
-        ...(prazo_necessidade && {
-          prazo_necessidade: {
-            gte: new Date(prazo_necessidade)
-          }
-        }),
-        ...(filtrosAtivos.includes('prestes_a_vencer') && {
-          prazo_necessidade: {
-            lte: dataFutura
-          }
-        }),
-        ...(filtrosAtivos.includes('lancado_recentemente') && {
-          criado_em: {
-            gte: dataPassada
-          }
-        })
+        ...(prestesAVencer && {
+        prazo_necessidade: {
+          lte: limiteVencimento
+        }
+      })
       }
     }
   });
