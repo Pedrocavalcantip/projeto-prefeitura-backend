@@ -67,8 +67,10 @@ exports.login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro no processo de login:', error);
-        return res.status(500).json({ erro: 'Erro interno no servidor.' });
-    }
+
+  console.error('Erro ao fazer login:', error);
+  res.status(500).json({ erro: 'Erro interno no servidor.' });
+}
+
 
 };

@@ -1,6 +1,6 @@
 const doacoesService = require('../services/doacoes.service.js');
 
-// Buscar todas as doações
+// Buscar todas as doações com filtros
 const findAll = async (req, res) => {
   try {
     const filtros = req.query;
@@ -31,7 +31,7 @@ const findById = async (req, res) => {
 const create = async (req, res) => {
   try {
     const newDoacao = req.body;
-    const ongId = req.id_ong;
+    const ongId = req.id_ong; // vem do token
 
     if (!newDoacao.titulo || !newDoacao.descricao || !newDoacao.tipo_item) {
       return res.status(400).json({ message: 'Dados incompletos. Envie todos os campos obrigatórios.' });
