@@ -1,7 +1,23 @@
 const prisma = require('../config/database');
 
+//Biblioteca para fazer a contagem do tempo
+const { addDays} = require('date-fns');
+
 // Buscar todas as realocações com dados do produto
-const findAllService = async () => {
+const findAllService = async (filtros) => {
+  const {
+    tipo_item,
+    titulo,
+    urgencia,
+    ordem,
+    ong_id,
+    ordenarPor,
+    prestesAVencer           
+  } = filtros;
+
+  const hoje = new Date();
+  const limiteVencimento = addDays(hoje, 14); // produtos com prazo até 14 dias
+
   return await prisma.realocacoes_produto.findMany({
     include: {
       produtos: {
@@ -9,12 +25,44 @@ const findAllService = async () => {
           id_produto: true,
           titulo: true,
           descricao: true,
-          tipo_item: true
+          tipo_item: true,
+          urgencia: true,
+          prazo_necessidade: true,
+          criado_em: true,
+          ong_id: true 
         }
+      }
+    },
+
+
+    //Aqui faz a ordenagem, tu podendo dar preferência para uma urgênciencia de alta até baixa
+    orderBy: ordenarPor ? {
+      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc'
+    } : undefined,
+
+    // Aqui ocorre a checagem se o que você escolheu é igual ao da ong 
+    where: {
+      produtos: {
+        ...(tipo_item && { tipo_item }),
+        ...(urgencia && { urgencia }),
+        ...(ong_id && { ong_id: Number(ong_id) }), 
+        ...(titulo && {
+          titulo: {
+            contains: titulo,
+            mode: 'insensitive'
+          }
+        }),
+        ...(prestesAVencer && {
+        prazo_necessidade: {
+          lte: limiteVencimento
+        }
+      })
       }
     }
   });
 };
+
+
 
 // Buscar uma realocação pelo ID
 const findByIdService = async (id) => {

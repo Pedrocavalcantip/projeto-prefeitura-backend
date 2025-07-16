@@ -1,29 +1,67 @@
 // Importa a nossa conexão com o banco que você já criou
 const prisma = require('../config/database');
 
-// Função para buscar TODAS as doações no banco
-const findAllDoacoesService = async () => {
-    console.log('🔍 Buscando doações com dados da ONG...');
-    const doacoes = await prisma.produtos.findMany({
-        // Use 'include' para trazer os dados da ONG junto
-        include: {
-            ong: {
-                select: {
-                    id_ong: true,
-                    nome: true,
-                    email: true,
-                    whatsapp: true,
-                    instagram: true,
-                    facebook: true,
-                    site: true,
-                    logo_url: true
-                }
-            }
-        },
-    });
-    console.log('📊 Doações encontradas:', doacoes.length);
-    return doacoes;
+//Biblioteca para fazer a contagem do tempo
+const { addDays } = require('date-fns');
+
+// Função para buscar TODAS as doações no banco e fazer a filtragem
+const findAllDoacoesService = async (filtros) => {
+  const {
+    tipo_item,
+    titulo,
+    urgencia,
+    ordem,
+    ong_id,
+    ordenarPor,
+    prestesAVencer
+  } = filtros; // Coisas que iremos usar durante o processo
+
+  const hoje = new Date();
+  const limiteVencimento = addDays(hoje, 14); // produtos com prazo até 14 dias
+  
+
+  //
+  return await prisma.produtos.findMany({
+    include: {
+        ong: {
+          select: {
+              id_ong: true,
+              nome: true,
+              email: true,
+              whatsapp: true,
+              instagram: true,
+              facebook: true,
+              site: true,
+              logo_url: true
+      
+          }
+      }
+    },
+
+    //Aqui faz a ordenagem, tu podendo dar preferência para uma urgênciencia de alta até baixa
+    orderBy: ordenarPor ? {
+      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc' 
+    } : undefined,
+    // Aqui ocorre a checagem se o que você escolheu é igual ao da ong 
+    where: {
+      ...(tipo_item && { tipo_item }),
+      ...(urgencia && { urgencia }),
+      ...(ong_id && { ong_id: Number(ong_id) }),
+      ...(titulo && {
+        titulo: {
+          contains: titulo,
+          mode: 'insensitive'
+        }
+      }),
+      ...(prestesAVencer && {
+        prazo_necessidade: {
+          lte: limiteVencimento
+        }
+      })
+    }
+  });
 };
+
 
 // Função para buscar UMA doação pelo seu ID
 const findByIdDoacaoService = async (id) => {
