@@ -19,9 +19,11 @@ function verificarToken(req, res, next) {
       return res.status(401).json({ erro: 'Token inválido' });
     }
 
+
     // Adiciona os dados do token à requisição para uso posterior
     req.email = decoded.email;
     req.id_ong = decoded.id_ong;
+
     next();
   });
 }

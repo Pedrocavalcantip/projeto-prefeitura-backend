@@ -1,16 +1,17 @@
 const doacoesService = require('../services/doacoes.service.js');
 
-// Controlador para buscar todas as doações
+// Buscar todas as doações com filtros
 const findAll = async (req, res) => {
   try {
-    const doacoes = await doacoesService.findAllDoacoesService();
+    const filtros = req.query;
+    const doacoes = await doacoesService.findAllDoacoesService(filtros);
     res.status(200).json(doacoes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Controlador para buscar uma doação pelo ID
+// Buscar uma doação por ID
 const findById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -26,7 +27,7 @@ const findById = async (req, res) => {
   }
 };
 
-// Controlador para criar uma nova doação
+// Criar nova doação
 const create = async (req, res) => {
   try {
     const newDoacao = req.body;
@@ -43,12 +44,12 @@ const create = async (req, res) => {
   }
 };
 
-// Controlador para atualizar uma doação
+// Atualizar doação
 const update = async (req, res) => {
   try {
     const { id } = req.params;
     const doacaoEditada = req.body;
-    const ongId = req.id_ong; // vem do token
+    const ongId = req.id_ong;
 
     const doacaoAtualizada = await doacoesService.updateDoacaoService(id, doacaoEditada, ongId);
     res.status(200).json(doacaoAtualizada);
@@ -60,11 +61,11 @@ const update = async (req, res) => {
   }
 };
 
-// Controlador para deletar uma doação
+// Deletar doação
 const deleteDoacao = async (req, res) => {
   try {
     const { id } = req.params;
-    const ongId = req.id_ong; // vem do token
+    const ongId = req.id_ong;
 
     await doacoesService.deleteDoacaoService(id, ongId);
     res.status(204).send();

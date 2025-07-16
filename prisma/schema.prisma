@@ -43,6 +43,7 @@ model produtos {
 }
 
 model realocacoes_produto {
+
   id_realocacao        Int      @id @default(autoincrement())
   id_produto           Int
   nome_ong_origem      String   @db.VarChar(100)
