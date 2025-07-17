@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/realocacoes.controller');
-const verificarToken = require('../middlewares/authMiddleware');
+const RealocacoesController = require('../controllers/realocacoes.controller'); // Mudança 1: Nome mais específico
+const authMiddleware = require('../middlewares/auth.middleware'); // Mudança 2: Padronizar nome
 
 // Todas as rotas protegidas
-router.get('/', verificarToken, controller.findAll);
-router.get('/:id', verificarToken, controller.findById);
-router.post('/', verificarToken, controller.create);
-router.put('/:id', verificarToken, controller.update);
-router.delete('/:id', verificarToken, controller.deleteRealocacao);
+router.get('/', authMiddleware, RealocacoesController.findAll);
+router.get('/:id', authMiddleware, RealocacoesController.findById);
+router.post('/', authMiddleware, RealocacoesController.create);
+router.put('/:id', authMiddleware, RealocacoesController.update);
+router.delete('/:id', authMiddleware, RealocacoesController.deleteRealocacao);
 
 module.exports = router;
