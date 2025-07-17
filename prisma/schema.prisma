@@ -18,7 +18,7 @@ enum FinalidadeProduto {
   REALOCACAO
 }
 
-enum StatusOng {
+enum StatusProduto {
   ATIVA
   INATIVA
   FINALIZADA
@@ -46,7 +46,7 @@ model produtos {
   url_imagem          String?
   criado_em           DateTime?             @default(now()) @db.Timestamp(6)
   urgencia            NivelUrgencia         @default(MEDIA)
-  status              StatusOng             @default(ATIVA)
+  status              StatusProduto             @default(ATIVA)
   quantidade          Int                   @default(1)
   finalidade          FinalidadeProduto     @default(DOACAO)
   ong_id              Int
