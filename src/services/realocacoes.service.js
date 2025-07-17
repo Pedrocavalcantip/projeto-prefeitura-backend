@@ -32,9 +32,16 @@ exports.findAllRealocacoesService = async () => {
 
 // Buscar realocação específica por ID (API pública)
 exports.findByIdRealocacaoService = async (id) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação extra no service
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   const produto = await prisma.produtos.findUnique({
     where: { 
-      id_produto: parseInt(id),
+      id_produto: idNumerico,
       finalidade: 'REALOCACAO' 
     },
     select: {
@@ -109,9 +116,19 @@ exports.createRealocacaoService = async (realocacaoData, ongId) => {
 
 // Atualizar realocação
 exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   // Verificar se a realocação existe e se pertence à ONG
   const realocacao = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) }
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'REALOCACAO' // Garantir que é uma realocação
+    }
   });
   
   if (!realocacao) {
@@ -137,9 +154,19 @@ exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
 
 // Atualizar status da realocação
 exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   // Verificar propriedade
   const realocacao = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) }
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'REALOCACAO' // Garantir que é uma realocação
+    }
   });
   
   if (!realocacao) {
@@ -158,9 +185,19 @@ exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
 
 // Deletar realocação
 exports.deleteRealocacaoService = async (id, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   // Verificar propriedade
   const realocacao = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) }
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'REALOCACAO' // Garantir que é uma realocação
+    }
   });
   
   if (!realocacao) {

@@ -58,8 +58,18 @@ exports.findDoacoesDaOngService = async (ongId) => {
 
 // Buscar doação específica (visualização pública)
 exports.findByIdDoacaoService = async (id) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação extra no service
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   const produto = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) },
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    },
     select: {
       id_produto: true,
       titulo: true,
@@ -110,9 +120,19 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
 
 // Atualizar doação com verificação de propriedade
 exports.updateDoacaoService = async (id, doacaoData, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   // Verificar se a doação existe e se pertence à ONG
   const doacao = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) }
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    }
   });
   
   if (!doacao) {
@@ -139,9 +159,19 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
 
 // Nova função: Atualizar apenas o status
 exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   // Verificar propriedade
   const doacao = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) }
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    }
   });
   
   if (!doacao) {
@@ -160,9 +190,19 @@ exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
 
 // Deletar doação com verificação de propriedade
 exports.deleteDoacaoService = async (id, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
   // Verificar propriedade
   const doacao = await prisma.produtos.findUnique({
-    where: { id_produto: parseInt(id) }
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    }
   });
   
   if (!doacao) {

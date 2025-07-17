@@ -10,15 +10,19 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // GET /realocacoes - Listar todas as realocações disponíveis
 router.get('/', realocacoesController.findAll);
 
-// GET /realocacoes/:id - Buscar realocação específica
-router.get('/:id', realocacoesController.findById);
-
 // ========================================
 // ROTAS PRIVADAS (Gestão de Realocações pela ONG)
 // ========================================
 
-// GET /realocacoes/minhas - Listar realocações da ONG logada
-router.get('/minhas/lista', authMiddleware, realocacoesController.findMy);
+// GET /realocacoes/minhas - Listar realocações da ONG logada (DEVE VIR ANTES DO /:id)
+router.get('/minhas', authMiddleware, realocacoesController.findMy);
+
+// ========================================
+// ROTAS PÚBLICAS ESPECÍFICAS (depois das rotas específicas)
+// ========================================
+
+// GET /realocacoes/:id - Buscar realocação específica
+router.get('/:id', realocacoesController.findById);
 
 // POST /realocacoes - Criar nova realocação
 router.post('/', authMiddleware, realocacoesController.create);

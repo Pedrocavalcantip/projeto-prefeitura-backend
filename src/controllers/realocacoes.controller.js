@@ -14,6 +14,12 @@ const findAll = async (req, res) => {
 const findById = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
+    
     const realocacao = await realocacoesService.findByIdRealocacaoService(id);
     res.status(200).json(realocacao);
   } catch (error) {
@@ -46,6 +52,16 @@ const create = async (req, res) => {
       return res.status(400).json({ message: 'Dados incompletos. Título, descrição e tipo de item são obrigatórios.' });
     }
 
+    // Validação adicional de campos vazios ou apenas espaços
+    if (newRealocacao.titulo.trim() === '' || newRealocacao.descricao.trim() === '' || newRealocacao.tipo_item.trim() === '') {
+      return res.status(400).json({ message: 'Título, descrição e tipo de item não podem estar vazios.' });
+    }
+
+    // Validação de quantidade (se fornecida, deve ser válida)
+    if (newRealocacao.quantidade && (isNaN(newRealocacao.quantidade) || newRealocacao.quantidade <= 0)) {
+      return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
+    }
+
     const realocacaoCriada = await realocacoesService.createRealocacaoService(newRealocacao, ongId);
     res.status(201).json(realocacaoCriada);
   } catch (error) {
@@ -59,6 +75,11 @@ const update = async (req, res) => {
     const { id } = req.params;
     const realocacaoEditada = req.body;
     const ongId = req.id_ong;
+
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
 
     const realocacaoAtualizada = await realocacoesService.updateRealocacaoService(id, realocacaoEditada, ongId);
     res.status(200).json(realocacaoAtualizada);
@@ -76,6 +97,11 @@ const updateStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const ongId = req.id_ong;
+
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
 
     // Validação básica do status
     if (!status || !['ATIVA', 'FINALIZADA'].includes(status)) {
@@ -97,6 +123,11 @@ const deleteRealocacao = async (req, res) => {
   try {
     const { id } = req.params;
     const ongId = req.id_ong;
+
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
 
     await realocacoesService.deleteRealocacaoService(id, ongId);
     res.status(204).send();
