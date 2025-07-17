@@ -20,7 +20,6 @@ enum FinalidadeProduto {
 
 enum StatusProduto {
   ATIVA
-  INATIVA
   FINALIZADA
 }
 

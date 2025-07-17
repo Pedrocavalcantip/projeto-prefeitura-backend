@@ -1,6 +1,6 @@
 const realocacoesService = require('../services/realocacoes.service');
 
-// Listar todas as realocações
+// Listar todas as realocações (API pública - marketplace)
 const findAll = async (req, res) => {
   try {
     const realocacoes = await realocacoesService.findAllRealocacoesService();
@@ -10,12 +10,26 @@ const findAll = async (req, res) => {
   }
 };
 
-// Buscar realocação por ID
+// Buscar realocação por ID (API pública)
 const findById = async (req, res) => {
   try {
     const { id } = req.params;
     const realocacao = await realocacoesService.findByIdRealocacaoService(id);
     res.status(200).json(realocacao);
+  } catch (error) {
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Listar realocações da ONG logada (API privada)
+const findMy = async (req, res) => {
+  try {
+    const ongId = req.id_ong;
+    const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
+    res.status(200).json(realocacoes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -28,8 +42,8 @@ const create = async (req, res) => {
     const ongId = req.id_ong;
 
     // Validação básica
-    if (!newRealocacao.produto_id || !newRealocacao.quantidade_realocada) {
-      return res.status(400).json({ message: 'Dados incompletos. Produto ID e quantidade são obrigatórios.' });
+    if (!newRealocacao.titulo || !newRealocacao.descricao || !newRealocacao.tipo_item) {
+      return res.status(400).json({ message: 'Dados incompletos. Título, descrição e tipo de item são obrigatórios.' });
     }
 
     const realocacaoCriada = await realocacoesService.createRealocacaoService(newRealocacao, ongId);
@@ -47,6 +61,28 @@ const update = async (req, res) => {
     const ongId = req.id_ong;
 
     const realocacaoAtualizada = await realocacoesService.updateRealocacaoService(id, realocacaoEditada, ongId);
+    res.status(200).json(realocacaoAtualizada);
+  } catch (error) {
+    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Atualizar status da realocação
+const updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const ongId = req.id_ong;
+
+    // Validação básica do status
+    if (!status || !['ATIVA', 'FINALIZADA'].includes(status)) {
+      return res.status(400).json({ message: 'Status inválido. Use ATIVA ou FINALIZADA.' });
+    }
+
+    const realocacaoAtualizada = await realocacoesService.updateStatusRealocacaoService(id, status, ongId);
     res.status(200).json(realocacaoAtualizada);
   } catch (error) {
     if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
@@ -75,7 +111,9 @@ const deleteRealocacao = async (req, res) => {
 module.exports = {
   findAll,
   findById,
+  findMy,
   create,
   update,
+  updateStatus,
   deleteRealocacao,
 };

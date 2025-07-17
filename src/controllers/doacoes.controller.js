@@ -64,8 +64,8 @@ const updateStatus = async (req, res) => {
     const ongId = req.id_ong;
 
     // Validação básica do status
-    if (!status || !['ATIVA', 'INATIVA', 'FINALIZADA'].includes(status)) {
-      return res.status(400).json({ message: 'Status inválido. Use ATIVA, INATIVA ou FINALIZADA.' });
+    if (!status || !['ATIVA', 'FINALIZADA'].includes(status)) {
+      return res.status(400).json({ message: 'Status inválido. Use ATIVA ou FINALIZADA.' });
     }
 
     const doacaoAtualizada = await doacoesService.updateStatusDoacaoService(id, status, ongId);
