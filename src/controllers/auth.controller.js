@@ -1,76 +1,39 @@
-const axios = require('axios');
 const jwt = require('jsonwebtoken');
-// Importe a nossa conexão com o banco
-const prisma = require('../config/database');
+const authService = require('../services/auth.service');
 
 exports.login = async (req, res) => {
+  const { email, password } = req.body;
 
-    const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email e senha são obrigatórios' });
+  }
 
-    try {
-        //  Autentica com a API externa
-        console.log('🔐 Fazendo login na API da prefeitura...');
-        const response = await axios.post('https://bora-impactar-dev.setd.rdmapps.com.br/api/login', { email, password });
-
-        if (response.status !== 200 || !response.data.user) {
-            return res.status(401).json({ erro: 'Email ou senha inválidos.' });
-        }
-
-        // Extrai os dados da resposta da Prefeitura
-        const ongDataFromApi = response.data.ngo;
-        const userDataFromApi = response.data.user;
-        
-        console.log('📊 Dados da ONG recebidos:', ongDataFromApi);
-        console.log('👤 Dados do usuário recebidos:', userDataFromApi);
-
-        //  A LÓGICA DE SINCRONIZAÇÃO (UPSERT)
-        console.log('🔄 Sincronizando dados da ONG...');
-        const ong = await prisma.ongs.upsert({
-            where: { email: userDataFromApi.email }, // Procura a ONG pelo email
-            update: { 
-                nome: ongDataFromApi.name, 
-                whatsapp: ongDataFromApi.contact_phone,
-                instagram: ongDataFromApi.instagram_link,
-                facebook: ongDataFromApi.facebook_link,
-                site: ongDataFromApi.site,
-                logo_url: ongDataFromApi.logo_photo_url,
-            },
-            create: { 
-                email: userDataFromApi.email,
-                nome: ongDataFromApi.name, 
-                whatsapp: ongDataFromApi.contact_phone,
-                instagram: ongDataFromApi.instagram_link,
-                facebook: ongDataFromApi.facebook_link,
-                site: ongDataFromApi.site,
-                logo_url: ongDataFromApi.logo_photo_url,
-            },
-        });
-
-        console.log('✅ ONG sincronizada com ID:', ong.id_ong);
-
-        // Cria o token JWT, agora com o ID da ONG do NOSSO banco
-        const token = jwt.sign(
-            { id_ong: ong.id_ong, email: ong.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        );
-
-        // Retorna o sucesso com o token
-        return res.json({ 
-            auth: true, 
-            token: token,
-            debug: {
-                ong_id: ong.id_ong,
-                nome: ong.nome,
-                email: ong.email
-            }
-        });
-
-    } catch (error) {
-
-  console.error('Erro ao fazer login:', error);
-  res.status(500).json({ erro: 'Erro interno no servidor.' });
-}
-
-
+  try {
+    // Usar o service para autenticar
+    const apiResponse = await authService.loginNaApiPrefeitura(email, password);
+    const ongDataFromApi = apiResponse.ngo;
+    const userDataFromApi = apiResponse.user;
+    
+    console.log('📊 Dados da ONG recebidos:', ongDataFromApi);
+    console.log('👤 Dados do usuário recebidos:', userDataFromApi);
+    
+    // Sincronizar com nosso banco
+    const ong = await authService.sincronizarOng(ongDataFromApi, userDataFromApi);
+    
+    // Gerar token JWT
+    const token = jwt.sign(
+      { id_ong: ong.id_ong, email: ong.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+    
+    // Retornar apenas o necessário
+    return res.json({ 
+      auth: true, 
+      token: token
+    });
+  } catch (error) {
+    console.error('Erro ao fazer login:', error);
+    res.status(500).json({ erro: 'Erro interno no servidor.' });
+  }
 };
