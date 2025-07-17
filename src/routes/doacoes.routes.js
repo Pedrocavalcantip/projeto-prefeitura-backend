@@ -1,21 +1,18 @@
-const { Router } = require('express');
-const verificarToken = require('../middlewares/authMiddleware');
-const doacoesController = require('../controllers/doacoes.controller.js');
-
-
-const doacoesRouter = Router();
+const express = require('express');
+const router = express.Router();
+const DoacoesController = require('../controllers/doacoes.controller');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 // Rotas públicas
-doacoesRouter.get('/', doacoesController.findAll);
-doacoesRouter.get('/:id', doacoesController.findById);
+router.get('/', DoacoesController.findAll);
+router.get('/:id', DoacoesController.findById);
 
+// Rotas protegidas
+router.post('/', authMiddleware, DoacoesController.create);
+router.put('/:id', authMiddleware, DoacoesController.update);
+router.delete('/:id', authMiddleware, DoacoesController.deleteDoacao);
 
-// Rotas protegidas (aplicando middleware)
-doacoesRouter.use(verificarToken);
+// Nova rota para atualizar status
+router.patch('/:id/status', authMiddleware, DoacoesController.updateStatus);
 
-doacoesRouter.post('/', doacoesController.create);
-doacoesRouter.put('/:id', doacoesController.update);
-doacoesRouter.delete('/:id', doacoesController.deleteDoacao);
-
-
-module.exports = doacoesRouter;
+module.exports = router;
