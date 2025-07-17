@@ -1,147 +1,162 @@
 const prisma = require('../config/database');
 
-//Biblioteca para fazer a contagem do tempo
-const { addDays} = require('date-fns');
-
-// Buscar todas as realocações com dados do produto
-const findAllService = async (filtros) => {
-  const {
-    tipo_item,
-    titulo,
-    urgencia,
-    ordem,
-    ong_id,
-    ordenarPor,
-    prestesAVencer           
-  } = filtros;
-
-  const hoje = new Date();
-  const limiteVencimento = addDays(hoje, 14); // produtos com prazo até 14 dias
-
+// Listar todas as realocações
+exports.findAllRealocacoesService = async () => {
   return await prisma.realocacoes_produto.findMany({
-    include: {
-      produtos: {
+    select: {
+      id_realocacao: true,
+      observacoes: true,
+      data_post: true,
+      quantidade_realocada: true,
+      produto: {
+        select: {
+          id_produto: true,
+          titulo: true,
+          tipo_item: true,
+          urgencia: true
+        }
+      },
+      ong_origem: {
+        select: {
+          nome: true,
+          whatsapp: true,
+          logo_url: true
+        }
+      }
+    },
+    orderBy: {
+      data_post: 'desc'
+    }
+  });
+};
+
+// Buscar realocação por ID
+exports.findByIdRealocacaoService = async (id) => {
+  const realocacao = await prisma.realocacoes_produto.findUnique({
+    where: { id_realocacao: parseInt(id) },
+    select: {
+      id_realocacao: true,
+      observacoes: true,
+      data_post: true,
+      quantidade_realocada: true,
+      produto: {
         select: {
           id_produto: true,
           titulo: true,
           descricao: true,
           tipo_item: true,
           urgencia: true,
-          prazo_necessidade: true,
-          criado_em: true,
-          ong_id: true 
+          quantidade: true
         }
-      }
-    },
-
-
-    //Aqui faz a ordenagem, tu podendo dar preferência para uma urgênciencia de alta até baixa
-    orderBy: ordenarPor ? {
-      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc'
-    } : undefined,
-
-    // Aqui ocorre a checagem se o que você escolheu é igual ao da ong 
-    where: {
-      produtos: {
-        ...(tipo_item && { tipo_item }),
-        ...(urgencia && { urgencia }),
-        ...(ong_id && { ong_id: Number(ong_id) }), 
-        ...(titulo && {
-          titulo: {
-            contains: titulo,
-            mode: 'insensitive'
-          }
-        }),
-        ...(prestesAVencer && {
-        prazo_necessidade: {
-          lte: limiteVencimento
-        }
-      })
-      }
-    }
-  });
-};
-
-
-
-// Buscar uma realocação pelo ID
-const findByIdService = async (id) => {
-  return await prisma.realocacoes_produto.findUnique({
-    where: { id_realocacao: Number(id) },
-    include: {
-      produtos: {
+      },
+      ong_origem: {
         select: {
-          id_produto: true,
-          titulo: true,
-          descricao: true,
-          tipo_item: true
+          nome: true,
+          whatsapp: true,
+          instagram: true,
+          facebook: true,
+          site: true
         }
       }
     }
   });
+  
+  if (!realocacao) {
+    throw new Error('Realocação não encontrada');
+  }
+  
+  return realocacao;
 };
 
-// Criar nova realocação
-const createService = async (dados, ongId) => {
-  const { id_produto, observacoes } = dados;
-
-  if (!id_produto) throw new Error('id_produto é obrigatório');
-
+// Criar realocação
+exports.createRealocacaoService = async (realocacaoData, ongId) => {
+  // Verificar se o produto existe
   const produto = await prisma.produtos.findUnique({
-    where: { id_produto },
-    include: { ong: true }
+    where: { id_produto: parseInt(realocacaoData.produto_id) }
   });
-
-  if (!produto) throw new Error("Produto não encontrado.");
-  if (produto.ong_id !== ongId) throw new Error("Você não tem permissão para realocar este produto.");
-
-  return await prisma.realocacoes_produto.create({
+  
+  if (!produto) {
+    throw new Error('Produto não encontrado');
+  }
+  
+  // Verificar quantidade disponível
+  if (realocacaoData.quantidade_realocada > produto.quantidade) {
+    throw new Error('Quantidade solicitada maior que disponível');
+  }
+  
+  // Criar a realocação
+  const realocacao = await prisma.realocacoes_produto.create({
     data: {
-      id_produto,
-      observacoes,
-      nome_ong_origem: produto.ong.nome,
-      email_ong_origem: produto.ong.email,
-      whatsapp_ong_origem: produto.ong.whatsapp,
-      instagram_ong_origem: produto.ong.instagram
+      produto_id: parseInt(realocacaoData.produto_id),
+      observacoes: realocacaoData.observacoes,
+      quantidade_realocada: parseInt(realocacaoData.quantidade_realocada),
+      ong_origem_id: ongId
+    }
+  });
+  
+  // Atualizar a quantidade do produto
+  await prisma.produtos.update({
+    where: { id_produto: parseInt(realocacaoData.produto_id) },
+    data: { 
+      quantidade: { 
+        decrement: parseInt(realocacaoData.quantidade_realocada) 
+      }
+    }
+  });
+  
+  return realocacao;
+};
+
+// Atualizar realocação com verificação de propriedade
+exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
+  // Verificar propriedade
+  const realocacao = await prisma.realocacoes_produto.findUnique({
+    where: { id_realocacao: parseInt(id) }
+  });
+  
+  if (!realocacao) {
+    throw new Error('Realocação não encontrada');
+  }
+  
+  if (realocacao.ong_origem_id !== ongId) {
+    throw new Error('Você não tem permissão para modificar esta realocação');
+  }
+  
+  return await prisma.realocacoes_produto.update({
+    where: { id_realocacao: parseInt(id) },
+    data: {
+      observacoes: realocacaoData.observacoes,
+      quantidade_realocada: parseInt(realocacaoData.quantidade_realocada)
     }
   });
 };
 
-// Atualizar uma realocação
-const updateService = async (id, dados, ongId) => {
-  const existente = await prisma.realocacoes_produto.findUnique({
-    where: { id_realocacao: Number(id) },
-    include: { produtos: true }
+// Deletar realocação com verificação de propriedade
+exports.deleteRealocacaoService = async (id, ongId) => {
+  // Verificar propriedade
+  const realocacao = await prisma.realocacoes_produto.findUnique({
+    where: { id_realocacao: parseInt(id) }
   });
-
-  if (!existente) throw new Error('Realocação não encontrada');
-  if (existente.produtos.ong_id !== ongId) throw new Error('Você não tem permissão para editar esta realocação');
-
-  return await prisma.realocacoes_produto.update({
-    where: { id_realocacao: Number(id) },
-    data: dados,
+  
+  if (!realocacao) {
+    throw new Error('Realocação não encontrada');
+  }
+  
+  if (realocacao.ong_origem_id !== ongId) {
+    throw new Error('Você não tem permissão para deletar esta realocação');
+  }
+  
+  // Restaurar a quantidade no produto antes de deletar
+  await prisma.produtos.update({
+    where: { id_produto: realocacao.produto_id },
+    data: { 
+      quantidade: { 
+        increment: realocacao.quantidade_realocada 
+      }
+    }
   });
-};
-
-// Deletar uma realocação
-const deleteService = async (id, ongId) => {
-  const existente = await prisma.realocacoes_produto.findUnique({
-    where: { id_realocacao: Number(id) },
-    include: { produtos: true }
+  
+  return await prisma.realocacoes_produto.delete({
+    where: { id_realocacao: parseInt(id) }
   });
-
-  if (!existente) throw new Error('Realocação não encontrada');
-  if (existente.produtos.ong_id !== ongId) throw new Error('Você não tem permissão para excluir esta realocação');
-
-  await prisma.realocacoes_produto.delete({
-    where: { id_realocacao: Number(id) }
-  });
-};
-
-module.exports = {
-  findAllService,
-  findByIdService,
-  createService,
-  updateService,
-  deleteService,
 };

@@ -1,63 +1,74 @@
-const service = require('../services/realocacoes.service');
+const realocacoesService = require('../services/realocacoes.service');
 
-// Buscar todas as realocações
+// Listar todas as realocações
 const findAll = async (req, res) => {
   try {
-    const filtros = req.query;
-    const lista = await service.findAllService(filtros);
-    res.status(200).json(lista);
-  } catch (e) {
-    res.status(500).json({ erro: e.message });
+    const realocacoes = await realocacoesService.findAllRealocacoesService();
+    res.status(200).json(realocacoes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Buscar realocação por ID
 const findById = async (req, res) => {
   try {
-    const realocacao = await service.findByIdService(req.params.id);
-    if (!realocacao) return res.status(404).json({ erro: 'Realocação não encontrada' });
+    const { id } = req.params;
+    const realocacao = await realocacoesService.findByIdRealocacaoService(id);
     res.status(200).json(realocacao);
-  } catch (e) {
-    res.status(500).json({ erro: e.message });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Criar nova realocação
 const create = async (req, res) => {
   try {
+    const newRealocacao = req.body;
     const ongId = req.id_ong;
-    const nova = await service.createService(req.body, ongId);
-    res.status(201).json(nova);
-  } catch (e) {
-    res.status(500).json({ erro: e.message });
+
+    // Validação básica
+    if (!newRealocacao.produto_id || !newRealocacao.quantidade_realocada) {
+      return res.status(400).json({ message: 'Dados incompletos. Produto ID e quantidade são obrigatórios.' });
+    }
+
+    const realocacaoCriada = await realocacoesService.createRealocacaoService(newRealocacao, ongId);
+    res.status(201).json(realocacaoCriada);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Atualizar realocação existente
+// Atualizar realocação
 const update = async (req, res) => {
   try {
+    const { id } = req.params;
+    const realocacaoEditada = req.body;
     const ongId = req.id_ong;
-    const atualizada = await service.updateService(req.params.id, req.body, ongId);
-    res.status(200).json(atualizada);
-  } catch (e) {
-    if (e.message.includes('permissão')) {
-      return res.status(403).json({ erro: e.message });
+
+    const realocacaoAtualizada = await realocacoesService.updateRealocacaoService(id, realocacaoEditada, ongId);
+    res.status(200).json(realocacaoAtualizada);
+  } catch (error) {
+    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
     }
-    res.status(500).json({ erro: e.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Deletar uma realocação
+// Deletar realocação
 const deleteRealocacao = async (req, res) => {
   try {
+    const { id } = req.params;
     const ongId = req.id_ong;
-    await service.deleteService(req.params.id, ongId);
+
+    await realocacoesService.deleteRealocacaoService(id, ongId);
     res.status(204).send();
-  } catch (e) {
-    if (e.message.includes('permissão')) {
-      return res.status(403).json({ erro: e.message });
+  } catch (error) {
+    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
     }
-    res.status(500).json({ erro: e.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
