@@ -31,7 +31,32 @@ exports.findAllDoacoesService = async () => {
   });
 };
 
-// Buscar doação específica
+// Nova função: Listar doações da ONG logada (com dados completos)
+exports.findDoacoesDaOngService = async (ongId) => {
+  return await prisma.produtos.findMany({
+    where: {
+      ong_id: ongId,
+      finalidade: 'DOACAO'
+    },
+    select: {
+      id_produto: true,
+      titulo: true,
+      descricao: true,
+      tipo_item: true,
+      urgencia: true,
+      quantidade: true,      // ← Só a ONG dona vê
+      status: true,          // ← Só a ONG dona vê
+      url_imagem: true,
+      prazo_necessidade: true,
+      criado_em: true
+    },
+    orderBy: {
+      criado_em: 'desc'
+    }
+  });
+};
+
+// Buscar doação específica (visualização pública)
 exports.findByIdDoacaoService = async (id) => {
   const produto = await prisma.produtos.findUnique({
     where: { id_produto: parseInt(id) },
@@ -42,8 +67,6 @@ exports.findByIdDoacaoService = async (id) => {
       tipo_item: true,
       urgencia: true,
       quantidade: true,
-      status: true,
-      finalidade: true,
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
