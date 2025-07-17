@@ -1,4 +1,5 @@
 const realocacoesService = require('../services/realocacoes.service');
+const { validateToken } = require('../utils/tokenUtils');
 
 // Listar todas as realocações (API pública - marketplace) OU realocações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
@@ -7,23 +8,15 @@ const findAll = async (req, res) => {
     
     // Se tem query 'minha=true' e token de autorização
     if (minha === 'true') {
-      // Verificar se tem token (middleware não é obrigatório nesta rota)
-      if (!req.headers.authorization) {
-        return res.status(401).json({ message: 'Token de autorização necessário para listar suas realocações.' });
+      const tokenValidation = validateToken(req.headers.authorization);
+      
+      if (!tokenValidation.valid) {
+        return res.status(401).json({ message: tokenValidation.error });
       }
       
-      // Simular verificação do middleware manualmente
-      const jwt = require('jsonwebtoken');
-      try {
-        const token = req.headers.authorization.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const ongId = decoded.id_ong;
-        
-        const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
-        return res.status(200).json(realocacoes);
-      } catch (error) {
-        return res.status(401).json({ message: 'Token inválido.' });
-      }
+      const ongId = tokenValidation.decoded.id_ong;
+      const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
+      return res.status(200).json(realocacoes);
     }
     
     // Caso padrão: marketplace público
@@ -50,17 +43,6 @@ const findById = async (req, res) => {
     if (error.message.includes('não encontrada')) {
       return res.status(404).json({ message: error.message });
     }
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Listar realocações da ONG logada (API privada)
-const findMy = async (req, res) => {
-  try {
-    const ongId = req.id_ong;
-    const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
-    res.status(200).json(realocacoes);
-  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

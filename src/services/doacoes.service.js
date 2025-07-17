@@ -144,7 +144,7 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
   }
   
   return await prisma.produtos.update({
-    where: { id_produto: parseInt(id) },
+    where: { id_produto: idNumerico },
     data: {
       titulo: doacaoData.titulo,
       descricao: doacaoData.descricao,
@@ -183,7 +183,7 @@ exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
   }
   
   return await prisma.produtos.update({
-    where: { id_produto: parseInt(id) },
+    where: { id_produto: idNumerico },
     data: { status: newStatus }
   });
 };
@@ -214,6 +214,6 @@ exports.deleteDoacaoService = async (id, ongId) => {
   }
   
   return await prisma.produtos.delete({
-    where: { id_produto: parseInt(id) }
+    where: { id_produto: idNumerico }
   });
 };

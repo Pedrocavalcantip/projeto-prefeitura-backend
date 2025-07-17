@@ -1,4 +1,5 @@
 const doacoesService = require('../services/doacoes.service');
+const { validateToken } = require('../utils/tokenUtils');
 
 // Listar todas as doações OU doações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
@@ -7,23 +8,15 @@ const findAll = async (req, res) => {
     
     // Se tem query 'minha=true' e token de autorização
     if (minha === 'true') {
-      // Verificar se tem token
-      if (!req.headers.authorization) {
-        return res.status(401).json({ message: 'Token de autorização necessário para listar suas doações.' });
+      const tokenValidation = validateToken(req.headers.authorization);
+      
+      if (!tokenValidation.valid) {
+        return res.status(401).json({ message: tokenValidation.error });
       }
       
-      // Verificação manual do token
-      const jwt = require('jsonwebtoken');
-      try {
-        const token = req.headers.authorization.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const ongId = decoded.id_ong;
-        
-        const doacoes = await doacoesService.findDoacoesDaOngService(ongId);
-        return res.status(200).json(doacoes);
-      } catch (error) {
-        return res.status(401).json({ message: 'Token inválido.' });
-      }
+      const ongId = tokenValidation.decoded.id_ong;
+      const doacoes = await doacoesService.findDoacoesDaOngService(ongId);
+      return res.status(200).json(doacoes);
     }
     
     // Caso padrão: marketplace público
