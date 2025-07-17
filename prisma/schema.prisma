@@ -7,6 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum NivelUrgencia {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+enum FinalidadeProduto {
+  DOACAO
+  REALOCACAO
+}
+
+enum StatusOng {
+  ATIVA
+  INATIVA
+  FINALIZADA
+}
+
 model ongs {
   id_ong    Int        @id @default(autoincrement())
   nome      String     @db.VarChar(100)
@@ -17,37 +34,43 @@ model ongs {
   site      String?
   logo_url  String?
   produtos  produtos[]
+  realocacoes_iniciadas realocacoes_produto[]
 }
 
 model produtos {
-  urgencia            String                @db.VarChar(20)
+  id_produto          Int                   @id @default(autoincrement())
+  titulo              String                @db.VarChar(150)
+  descricao           String
   tipo_item           String                @db.VarChar(50)
   prazo_necessidade   DateTime?             @db.Date
-  descricao           String
-  criado_em           DateTime?             @default(now()) @db.Timestamp(6)
   url_imagem          String?
-  id_produto          Int                   @id @default(autoincrement())
+  criado_em           DateTime?             @default(now()) @db.Timestamp(6)
+  urgencia            NivelUrgencia         @default(MEDIA)
+  status              StatusOng             @default(ATIVA)
+  quantidade          Int                   @default(1)
+  finalidade          FinalidadeProduto     @default(DOACAO)
   ong_id              Int
-  titulo              String                @db.VarChar(150)
   ong                 ongs                  @relation(fields: [ong_id], references: [id_ong])
   realocacoes_produto realocacoes_produto[]
 }
 
 model realocacoes_produto {
-  id_produto           Int
+  id_realocacao        Int       @id @default(autoincrement())
   observacoes          String?
   data_post            DateTime? @default(now()) @db.Timestamp(6)
-  email_ong_origem     String    @db.VarChar(255)
-  id_realocacao        Int       @id @default(autoincrement())
-  instagram_ong_origem String?   @db.VarChar(50)
-  nome_ong_origem      String    @db.VarChar(100)
-  whatsapp_ong_origem  String?   @db.VarChar(20)
-  produtos             produtos  @relation(fields: [id_produto], references: [id_produto], onDelete: NoAction, onUpdate: NoAction)
+  quantidade_realocada Int
+
+  produto_id    Int
+  produto       produtos @relation(fields: [produto_id], references: [id_produto])
+
+  ong_origem_id Int
+  ong_origem    ongs     @relation(fields: [ong_origem_id], references: [id_ong])
 }
 
 model voluntarios {
-  id_beneficiario Int     @id @default(autoincrement())
+  id_voluntario   Int     @id @default(autoincrement())
   nome            String  @db.VarChar(100)
-  whatsapp        String  @db.VarChar(20)
+  email           String  @unique @db.VarChar(225)
+  whatsapp        String  @unique @db.VarChar(20)
   receber_alertas Boolean @default(true)
 }
