@@ -4,18 +4,11 @@ const realocacoesController = require('../controllers/realocacoes.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // ========================================
-// ROTAS PÚBLICAS (Marketplace de Realocações)
+// ROTAS PÚBLICAS/PRIVADAS (Com Query Parameter)
 // ========================================
 
-// GET /realocacoes - Listar todas as realocações disponíveis
+// GET /realocacoes - Marketplace público OU realocações da ONG (com ?minha=true)
 router.get('/', realocacoesController.findAll);
-
-// ========================================
-// ROTAS PRIVADAS (Gestão de Realocações pela ONG)
-// ========================================
-
-// GET /realocacoes/minhas - Listar realocações da ONG logada (DEVE VIR ANTES DO /:id)
-router.get('/minhas', authMiddleware, realocacoesController.findMy);
 
 // ========================================
 // ROTAS PÚBLICAS ESPECÍFICAS (depois das rotas específicas)

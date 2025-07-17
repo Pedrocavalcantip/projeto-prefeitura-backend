@@ -3,11 +3,8 @@ const router = express.Router();
 const DoacoesController = require('../controllers/doacoes.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// Rotas públicas
+// Rotas públicas/privadas (com query parameter)
 router.get('/', DoacoesController.findAll);
-
-// Rotas privadas (devem vir antes das rotas com parâmetros)
-router.get('/minhas', authMiddleware, DoacoesController.findMy);
 
 // Rotas públicas específicas (depois das rotas específicas)
 router.get('/:id', DoacoesController.findById);

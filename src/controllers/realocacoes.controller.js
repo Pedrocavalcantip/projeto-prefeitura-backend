@@ -1,8 +1,32 @@
 const realocacoesService = require('../services/realocacoes.service');
 
-// Listar todas as realocações (API pública - marketplace)
+// Listar todas as realocações (API pública - marketplace) OU realocações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
   try {
+    const { minha } = req.query;
+    
+    // Se tem query 'minha=true' e token de autorização
+    if (minha === 'true') {
+      // Verificar se tem token (middleware não é obrigatório nesta rota)
+      if (!req.headers.authorization) {
+        return res.status(401).json({ message: 'Token de autorização necessário para listar suas realocações.' });
+      }
+      
+      // Simular verificação do middleware manualmente
+      const jwt = require('jsonwebtoken');
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const ongId = decoded.id_ong;
+        
+        const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
+        return res.status(200).json(realocacoes);
+      } catch (error) {
+        return res.status(401).json({ message: 'Token inválido.' });
+      }
+    }
+    
+    // Caso padrão: marketplace público
     const realocacoes = await realocacoesService.findAllRealocacoesService();
     res.status(200).json(realocacoes);
   } catch (error) {
@@ -142,7 +166,6 @@ const deleteRealocacao = async (req, res) => {
 module.exports = {
   findAll,
   findById,
-  findMy,
   create,
   update,
   updateStatus,

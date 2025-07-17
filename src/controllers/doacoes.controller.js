@@ -1,8 +1,32 @@
 const doacoesService = require('../services/doacoes.service');
 
-// Listar todas as doações
+// Listar todas as doações OU doações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
   try {
+    const { minha } = req.query;
+    
+    // Se tem query 'minha=true' e token de autorização
+    if (minha === 'true') {
+      // Verificar se tem token
+      if (!req.headers.authorization) {
+        return res.status(401).json({ message: 'Token de autorização necessário para listar suas doações.' });
+      }
+      
+      // Verificação manual do token
+      const jwt = require('jsonwebtoken');
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const ongId = decoded.id_ong;
+        
+        const doacoes = await doacoesService.findDoacoesDaOngService(ongId);
+        return res.status(200).json(doacoes);
+      } catch (error) {
+        return res.status(401).json({ message: 'Token inválido.' });
+      }
+    }
+    
+    // Caso padrão: marketplace público
     const doacoes = await doacoesService.findAllDoacoesService();
     res.status(200).json(doacoes);
   } catch (error) {
@@ -128,21 +152,9 @@ const deleteDoacao = async (req, res) => {
   }
 };
 
-// Listar doações da ONG logada (API privada)
-const findMy = async (req, res) => {
-  try {
-    const ongId = req.id_ong;
-    const doacoes = await doacoesService.findDoacoesDaOngService(ongId);
-    res.status(200).json(doacoes);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 module.exports = {
   findAll,
   findById,
-  findMy,
   create,
   update,
   updateStatus,
