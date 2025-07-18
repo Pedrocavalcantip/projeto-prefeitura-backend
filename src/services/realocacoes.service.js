@@ -1,11 +1,25 @@
 const prisma = require('../config/database');
 
 // Listar todas as realocações disponíveis (API pública para o marketplace)
-exports.findAllRealocacoesService = async () => {
+exports.findAllRealocacoesService = async (filtros = {}) => {
+  const { titulo, tipo_item } = filtros;
+
   return await prisma.produtos.findMany({
     where: {
       status: 'ATIVA',
-      finalidade: 'REALOCACAO'
+      finalidade: 'REALOCACAO',
+      ...(titulo && {
+        titulo: {
+          contains: titulo,
+          mode: 'insensitive'
+        }
+      }),
+      ...(tipo_item && {
+        tipo_item: {
+          contains: tipo_item,
+          mode: 'insensitive'
+        }
+      })
     },
     select: {
       id_produto: true,
@@ -29,6 +43,7 @@ exports.findAllRealocacoesService = async () => {
     }
   });
 };
+
 
 // Buscar realocação específica por ID (API pública)
 exports.findByIdRealocacaoService = async (id) => {
