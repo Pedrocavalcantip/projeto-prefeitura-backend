@@ -11,7 +11,7 @@ exports.login = async (req, res) => {
   try {
     // Usar o service para autenticar
     const apiResponse = await authService.loginNaApiPrefeitura(email, password);
-    const ongDataFromApi = apiResponse.ngo;
+    const ongDataFromApi = apiResponse.ong;
     const userDataFromApi = apiResponse.user;
     
     console.log('📊 Dados da ONG recebidos:', ongDataFromApi);
@@ -34,6 +34,14 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao fazer login:', error);
+    
+    // Se for erro de autenticação (401), retornar 401 --(ajuste feito a partir de testes)--
+    if (error.message.includes('401') || error.message.includes('Falha na autenticação')) {
+      return res.status(401).json({ auth: false, erro: 'Credenciais inválidas' });
+    }
+    
+    // Outros erros retornam 500
     res.status(500).json({ erro: 'Erro interno no servidor.' });
   }
 };
+

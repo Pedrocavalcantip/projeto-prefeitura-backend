@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const app = require('../../index'); 
 
 describe ('Doações -GET publico', () => {
-    it (' deve retornar lista de doacoes ativass (sem o token)', async () => {
+    it (' deve retornar lista de doacoes ativas (sem o token)', async () => {
         const response = await request(app).get('/doacoes');
         expect(response.statusCode).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
@@ -126,4 +126,69 @@ describe ('Doacoes - POST (criacao)', () => {
         expect(response.body).toHaveProperty('message');
     });
 });
+
+// teste de atualizacao de doacao
+describe('Doações - PUT (atualização)', () => {
+    let token;
+    let doacaoId;
+
+    beforeAll(async () => {
+        const login = await request(app)
+            .post('/auth/login')
+            .send({ email: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
+        token = login.body.token;
+
+        // Criar uma doação para testar a atualização
+        const novaDoacao = {
+            titulo: 'Doação para atualizar',
+            descricao: 'Descrição original',
+            tipo_item: 'Alimento',
+            quantidade: 5,
+            prazo_necessidade: '2023-12-31'
+        };
+        const response = await request(app)
+            .post('/doacoes')
+            .set('Authorization', `Bearer ${token}`)
+            .send(novaDoacao);
+        doacaoId = response.body.id_produto;
+    });
+
+    it('deve atualizar doação com token da ONG dona', async () => {
+        const dadosAtualizados = {
+            titulo: 'Doação Atualizada',
+            descricao: 'Nova descrição',
+            quantidade: 10
+        };
+
+        const response = await request(app)
+            .put(`/doacoes/${doacaoId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send(dadosAtualizados);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.titulo).toBe(dadosAtualizados.titulo);
+    });
+
+    it('deve retornar erro 401 ao tentar atualizar sem token', async () => {
+        const response = await request(app)
+            .put(`/doacoes/${doacaoId}`)
+            .send({ titulo: 'Tentativa sem token' });
+
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty('message');
+    });
+
+    it('deve retornar erro 404 para ID inexistente', async () => {
+        const response = await request(app)
+            .put('/doacoes/99999')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ titulo: 'Teste' });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body).toHaveProperty('message');
+    });
+});
+
+
+
 
