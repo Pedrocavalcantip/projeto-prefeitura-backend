@@ -1,11 +1,25 @@
 const prisma = require('../config/database');
 
 // Listar todas as doações públicas (apenas doações ativas)
-exports.findAllDoacoesService = async () => {
+exports.findAllDoacoesService = async (filtros = {}) => {
+  const { titulo, tipo_item, ordenarPorUrgencia } = filtros;
+
   return await prisma.produtos.findMany({
     where: {
       status: 'ATIVA',
-      finalidade: 'DOACAO'
+      finalidade: 'DOACAO',
+      ...(titulo && {
+        titulo: {
+          contains: titulo,
+          mode: 'insensitive'
+        }
+      }),
+      ...(tipo_item && {
+        tipo_item: {
+          equals: tipo_item,
+          mode: 'insensitive'
+        }
+      })
     },
     select: {
       id_produto: true,
@@ -25,11 +39,17 @@ exports.findAllDoacoesService = async () => {
         }
       }
     },
-    orderBy: {
-      criado_em: 'desc'
-    }
+    orderBy: ordenarPorUrgencia
+      ? {
+          // Prisma usa enum: ALTA, MEDIA, BAIXA → ordenação correta exige enum customizado ou mapeamento no front
+          urgencia: ordenarPorUrgencia === 'asc' ? 'asc' : 'desc'
+        }
+      : {
+          criado_em: 'desc'
+        }
   });
 };
+
 
 // Nova função: Listar doações da ONG logada (com dados completos)
 exports.findDoacoesDaOngService = async (ongId) => {
