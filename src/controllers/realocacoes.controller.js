@@ -1,63 +1,147 @@
-const service = require('../services/realocacoes.service');
+const realocacoesService = require('../services/realocacoes.service');
+const { validateToken } = require('../utils/tokenUtils');
 
-// Buscar todas as realocações
+// Listar todas as realocações (API pública - marketplace) OU realocações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
   try {
-    const filtros = req.query;
-    const lista = await service.findAllService(filtros);
-    res.status(200).json(lista);
-  } catch (e) {
-    res.status(500).json({ erro: e.message });
+    const { minha } = req.query;
+    
+    // Se tem query 'minha=true' e token de autorização
+    if (minha === 'true') {
+      const tokenValidation = validateToken(req.headers.authorization);
+      
+      if (!tokenValidation.valid) {
+        return res.status(401).json({ message: tokenValidation.error });
+      }
+      
+      const ongId = tokenValidation.decoded.id_ong;
+      const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
+      return res.status(200).json(realocacoes);
+    }
+    
+    // Caso padrão: marketplace público
+    const realocacoes = await realocacoesService.findAllRealocacoesService();
+    res.status(200).json(realocacoes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Buscar realocação por ID
+// Buscar realocação por ID (API pública)
 const findById = async (req, res) => {
   try {
-    const realocacao = await service.findByIdService(req.params.id);
-    if (!realocacao) return res.status(404).json({ erro: 'Realocação não encontrada' });
+    const { id } = req.params;
+    
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
+    
+    const realocacao = await realocacoesService.findByIdRealocacaoService(id);
     res.status(200).json(realocacao);
-  } catch (e) {
-    res.status(500).json({ erro: e.message });
+  } catch (error) {
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Criar nova realocação
 const create = async (req, res) => {
   try {
+    const newRealocacao = req.body;
     const ongId = req.id_ong;
-    const nova = await service.createService(req.body, ongId);
-    res.status(201).json(nova);
-  } catch (e) {
-    res.status(500).json({ erro: e.message });
+
+    // Validação básica
+    if (!newRealocacao.titulo || !newRealocacao.descricao || !newRealocacao.tipo_item) {
+      return res.status(400).json({ message: 'Dados incompletos. Título, descrição e tipo de item são obrigatórios.' });
+    }
+
+    // Validação adicional de campos vazios ou apenas espaços
+    if (newRealocacao.titulo.trim() === '' || newRealocacao.descricao.trim() === '' || newRealocacao.tipo_item.trim() === '') {
+      return res.status(400).json({ message: 'Título, descrição e tipo de item não podem estar vazios.' });
+    }
+
+    // Validação de quantidade (se fornecida, deve ser válida)
+    if (newRealocacao.quantidade && (isNaN(newRealocacao.quantidade) || newRealocacao.quantidade <= 0)) {
+      return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
+    }
+
+    const realocacaoCriada = await realocacoesService.createRealocacaoService(newRealocacao, ongId);
+    res.status(201).json(realocacaoCriada);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Atualizar realocação existente
+// Atualizar realocação
 const update = async (req, res) => {
   try {
+    const { id } = req.params;
+    const realocacaoEditada = req.body;
     const ongId = req.id_ong;
-    const atualizada = await service.updateService(req.params.id, req.body, ongId);
-    res.status(200).json(atualizada);
-  } catch (e) {
-    if (e.message.includes('permissão')) {
-      return res.status(403).json({ erro: e.message });
+
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
-    res.status(500).json({ erro: e.message });
+
+    const realocacaoAtualizada = await realocacoesService.updateRealocacaoService(id, realocacaoEditada, ongId);
+    res.status(200).json(realocacaoAtualizada);
+  } catch (error) {
+    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Deletar uma realocação
+// Atualizar status da realocação
+const updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const ongId = req.id_ong;
+
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
+
+    // Validação básica do status
+    if (!status || !['ATIVA', 'FINALIZADA'].includes(status)) {
+      return res.status(400).json({ message: 'Status inválido. Use ATIVA ou FINALIZADA.' });
+    }
+
+    const realocacaoAtualizada = await realocacoesService.updateStatusRealocacaoService(id, status, ongId);
+    res.status(200).json(realocacaoAtualizada);
+  } catch (error) {
+    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Deletar realocação
 const deleteRealocacao = async (req, res) => {
   try {
+    const { id } = req.params;
     const ongId = req.id_ong;
-    await service.deleteService(req.params.id, ongId);
-    res.status(204).send();
-  } catch (e) {
-    if (e.message.includes('permissão')) {
-      return res.status(403).json({ erro: e.message });
+
+    // Validação se ID é numérico
+    if (isNaN(id) || parseInt(id) <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
-    res.status(500).json({ erro: e.message });
+
+    await realocacoesService.deleteRealocacaoService(id, ongId);
+    res.status(204).send();
+  } catch (error) {
+    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -66,5 +150,6 @@ module.exports = {
   findById,
   create,
   update,
+  updateStatus,
   deleteRealocacao,
 };

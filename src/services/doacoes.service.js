@@ -1,144 +1,219 @@
-// Importa a nossa conexão com o banco que você já criou
 const prisma = require('../config/database');
 
-//Biblioteca para fazer a contagem do tempo
-const { addDays } = require('date-fns');
-
-// Função para buscar TODAS as doações no banco e fazer a filtragem
-const findAllDoacoesService = async (filtros) => {
-  const {
-    tipo_item,
-    titulo,
-    urgencia,
-    ordem,
-    ong_id,
-    ordenarPor,
-    prestesAVencer
-  } = filtros; // Coisas que iremos usar durante o processo
-
-  const hoje = new Date();
-  const limiteVencimento = addDays(hoje, 14); // produtos com prazo até 14 dias
-  
-
-  //
+// Listar todas as doações públicas (apenas doações ativas)
+exports.findAllDoacoesService = async () => {
   return await prisma.produtos.findMany({
-    include: {
-        ong: {
-          select: {
-              id_ong: true,
-              nome: true,
-              email: true,
-              whatsapp: true,
-              instagram: true,
-              facebook: true,
-              site: true,
-              logo_url: true
-      
-          }
+    where: {
+      status: 'ATIVA',
+      finalidade: 'DOACAO'
+    },
+    select: {
+      id_produto: true,
+      titulo: true,
+      descricao: true,
+      tipo_item: true,
+      urgencia: true,
+      quantidade: true,
+      url_imagem: true,
+      prazo_necessidade: true,
+      criado_em: true,
+      ong: {
+        select: {
+          nome: true,
+          whatsapp: true,
+          logo_url: true
+        }
       }
     },
-
-    //Aqui faz a ordenagem, tu podendo dar preferência para uma urgênciencia de alta até baixa
-    orderBy: ordenarPor ? {
-      [ordenarPor]: ordem === 'desc' ? 'desc' : 'asc' 
-    } : undefined,
-    // Aqui ocorre a checagem se o que você escolheu é igual ao da ong 
-    where: {
-      ...(tipo_item && { tipo_item }),
-      ...(urgencia && { urgencia }),
-      ...(ong_id && { ong_id: Number(ong_id) }),
-      ...(titulo && {
-        titulo: {
-          contains: titulo,
-          mode: 'insensitive'
-        }
-      }),
-      ...(prestesAVencer && {
-        prazo_necessidade: {
-          lte: limiteVencimento
-        }
-      })
+    orderBy: {
+      criado_em: 'desc'
     }
   });
 };
 
-
-// Função para buscar UMA doação pelo seu ID
-const findByIdDoacaoService = async (id) => {
-    const doacao = await prisma.produtos.findUnique({ 
-        where: { id_produto: Number(id) },
-        include: {
-            ong: true,
-        },
-    });
-    return doacao;
-};
-
-// Função para CRIAR uma nova doação
-const createDoacaoService = async (dadosDaNovaDoacao, ongId) => {
-    // Adicione o ong_id que veio do token aos dados da doação
-    const dadosComOng = {
-        ...dadosDaNovaDoacao,
-        ong_id: ongId,
-    };
-    const doacaoCriada = await prisma.produtos.create({ data: dadosComOng });
-    return doacaoCriada;
-};
-
-// Função para ATUALIZAR uma doação
-const updateDoacaoService = async (id, dadosParaEditar, ongId) => {
-  const doacaoExistente = await prisma.produtos.findUnique({
-    where: { id_produto: Number(id) }
+// Nova função: Listar doações da ONG logada (com dados completos)
+exports.findDoacoesDaOngService = async (ongId) => {
+  return await prisma.produtos.findMany({
+    where: {
+      ong_id: ongId,
+      finalidade: 'DOACAO'
+    },
+    select: {
+      id_produto: true,
+      titulo: true,
+      descricao: true,
+      tipo_item: true,
+      urgencia: true,
+      quantidade: true,      // ← Só a ONG dona vê
+      status: true,          // ← Só a ONG dona vê
+      url_imagem: true,
+      prazo_necessidade: true,
+      criado_em: true
+    },
+    orderBy: {
+      criado_em: 'desc'
+    }
   });
+};
 
-  if (!doacaoExistente) {
+// Buscar doação específica (visualização pública)
+exports.findByIdDoacaoService = async (id) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação extra no service
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
+  const produto = await prisma.produtos.findUnique({
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    },
+    select: {
+      id_produto: true,
+      titulo: true,
+      descricao: true,
+      tipo_item: true,
+      urgencia: true,
+      quantidade: true,
+      url_imagem: true,
+      prazo_necessidade: true,
+      criado_em: true,
+      ong: {
+        select: {
+          nome: true,
+          whatsapp: true,
+          logo_url: true,
+          instagram: true,
+          facebook: true,
+          site: true
+        }
+      }
+    }
+  });
+  
+  if (!produto) {
     throw new Error('Doação não encontrada');
   }
+  
+  return produto;
+};
 
-  if (doacaoExistente.ong_id !== ongId) {
-    throw new Error('Você não tem permissão para editar esta doação');
+// Criar doação
+exports.createDoacaoService = async (doacaoData, ongId) => {
+  return await prisma.produtos.create({
+    data: {
+      titulo: doacaoData.titulo,
+      descricao: doacaoData.descricao,
+      tipo_item: doacaoData.tipo_item,
+      prazo_necessidade: doacaoData.prazo_necessidade,
+      url_imagem: doacaoData.url_imagem,
+      urgencia: doacaoData.urgencia || 'MEDIA',
+      quantidade: doacaoData.quantidade || 1,
+      status: 'ATIVA',
+      finalidade: 'DOACAO',
+      ong_id: ongId
+    }
+  });
+};
+
+// Atualizar doação com verificação de propriedade
+exports.updateDoacaoService = async (id, doacaoData, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
   }
 
-  // Somente os campos válidos conforme o schema
-  const dadosValidados = {
-    titulo: dadosParaEditar.titulo,
-    descricao: dadosParaEditar.descricao,
-    tipo_item: dadosParaEditar.tipo_item,
-    urgencia: dadosParaEditar.urgencia,
-    prazo_necessidade: dadosParaEditar.prazo_necessidade
-  };
-
-  const doacaoAtualizada = await prisma.produtos.update({
-    where: { id_produto: Number(id) },
-    data: dadosValidados,
+  // Verificar se a doação existe e se pertence à ONG
+  const doacao = await prisma.produtos.findUnique({
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    }
   });
-
-  return doacaoAtualizada;
+  
+  if (!doacao) {
+    throw new Error('Doação não encontrada');
+  }
+  
+  if (doacao.ong_id !== ongId) {
+    throw new Error('Você não tem permissão para modificar esta doação');
+  }
+  
+  return await prisma.produtos.update({
+    where: { id_produto: idNumerico },
+    data: {
+      titulo: doacaoData.titulo,
+      descricao: doacaoData.descricao,
+      tipo_item: doacaoData.tipo_item,
+      prazo_necessidade: doacaoData.prazo_necessidade,
+      url_imagem: doacaoData.url_imagem,
+      urgencia: doacaoData.urgencia,
+      quantidade: doacaoData.quantidade
+    }
+  });
 };
 
-// Função para APAGAR uma doação
-const deleteDoacaoService = async (id, ongId) => {
-    // Primeiro, verifica se a doação pertence à ONG logada
-    const doacaoExistente = await prisma.produtos.findUnique({
-        where: { id_produto: Number(id) }
-    });
-    
-    if (!doacaoExistente) {
-        throw new Error('Doação não encontrada');
+// Nova função: Atualizar apenas o status
+exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
+  // Verificar propriedade
+  const doacao = await prisma.produtos.findUnique({
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
     }
-    
-    if (doacaoExistente.ong_id !== ongId) {
-        throw new Error('Você não tem permissão para deletar esta doação');
-    }
-    
-    await prisma.produtos.delete({ where: { id_produto: Number(id) } });
+  });
+  
+  if (!doacao) {
+    throw new Error('Doação não encontrada');
+  }
+  
+  if (doacao.ong_id !== ongId) {
+    throw new Error('Você não tem permissão para modificar esta doação');
+  }
+  
+  return await prisma.produtos.update({
+    where: { id_produto: idNumerico },
+    data: { status: newStatus }
+  });
 };
 
-// Exportamos todas as funções para que o próximo arquivo (o Controller) possa usá-las
-module.exports = {
-    findAllDoacoesService,
-    findByIdDoacaoService,
-    createDoacaoService,
-    updateDoacaoService,
-    deleteDoacaoService,
+// Deletar doação com verificação de propriedade
+exports.deleteDoacaoService = async (id, ongId) => {
+  const idNumerico = parseInt(id);
+  
+  // Validação do ID
+  if (isNaN(idNumerico) || idNumerico <= 0) {
+    throw new Error('ID deve ser um número válido maior que zero');
+  }
+
+  // Verificar propriedade
+  const doacao = await prisma.produtos.findUnique({
+    where: { 
+      id_produto: idNumerico,
+      finalidade: 'DOACAO' // Garantir que é uma doação
+    }
+  });
+  
+  if (!doacao) {
+    throw new Error('Doação não encontrada');
+  }
+  
+  if (doacao.ong_id !== ongId) {
+    throw new Error('Você não tem permissão para deletar esta doação');
+  }
+  
+  return await prisma.produtos.delete({
+    where: { id_produto: idNumerico }
+  });
 };

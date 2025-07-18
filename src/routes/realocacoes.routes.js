@@ -1,13 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/realocacoes.controller');
-const verificarToken = require('../middlewares/authMiddleware');
+const realocacoesController = require('../controllers/realocacoes.controller');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-// Todas as rotas protegidas
-router.get('/', verificarToken, controller.findAll);
-router.get('/:id', verificarToken, controller.findById);
-router.post('/', verificarToken, controller.create);
-router.put('/:id', verificarToken, controller.update);
-router.delete('/:id', verificarToken, controller.deleteRealocacao);
+// ========================================
+// ROTAS PÚBLICAS/PRIVADAS
+// ========================================
+
+// GET /realocacoes - Marketplace público OU realocações da ONG (com ?minha=true)
+router.get('/', realocacoesController.findAll);
+
+// GET /realocacoes/:id - Buscar realocação específica
+router.get('/:id', realocacoesController.findById);
+
+// ========================================
+// ROTAS PROTEGIDAS
+// ========================================
+
+// POST /realocacoes - Criar nova realocação
+router.post('/', authMiddleware, realocacoesController.create);
+
+// PUT /realocacoes/:id - Atualizar realocação
+router.put('/:id', authMiddleware, realocacoesController.update);
+
+// PATCH /realocacoes/:id/status - Atualizar status da realocação
+router.patch('/:id/status', authMiddleware, realocacoesController.updateStatus);
+
+// DELETE /realocacoes/:id - Deletar realocação
+router.delete('/:id', authMiddleware, realocacoesController.deleteRealocacao);
 
 module.exports = router;

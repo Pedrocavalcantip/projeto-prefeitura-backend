@@ -18,9 +18,8 @@ enum FinalidadeProduto {
   REALOCACAO
 }
 
-enum StatusOng {
+enum StatusProduto {
   ATIVA
-  INATIVA
   FINALIZADA
 }
 
@@ -46,7 +45,7 @@ model produtos {
   url_imagem          String?
   criado_em           DateTime?             @default(now()) @db.Timestamp(6)
   urgencia            NivelUrgencia         @default(MEDIA)
-  status              StatusOng             @default(ATIVA)
+  status              StatusProduto             @default(ATIVA)
   quantidade          Int                   @default(1)
   finalidade          FinalidadeProduto     @default(DOACAO)
   ong_id              Int
@@ -54,6 +53,9 @@ model produtos {
   realocacoes_produto realocacoes_produto[]
 }
 
+// NOTA: Esta tabela existe para futuras funcionalidades de transações
+// Atualmente não é usada no código - o sistema funciona como marketplace onde
+// produtos com finalidade='REALOCACAO' são listados publicamente para outras ONGs
 model realocacoes_produto {
   id_realocacao        Int       @id @default(autoincrement())
   observacoes          String?
