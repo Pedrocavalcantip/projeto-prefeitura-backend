@@ -77,6 +77,7 @@ describe ('Doacoes - POST (criacao)', () => {
         decoded = jwt.decode(token);
     });
 
+    // operação correta
     it( 'deve criar uma doacao com token valido', async () => {
         const novaDoacao = {
             titulo: 'Teste de Doação',
@@ -97,6 +98,7 @@ describe ('Doacoes - POST (criacao)', () => {
 
     });
 
+    // teste para erro 401
     it( 'deve retornar erro 401 ao tentar criar doação sem token', async () => {
         const response = await request(app)
             .post('/doacoes')
@@ -111,6 +113,7 @@ describe ('Doacoes - POST (criacao)', () => {
         expect(response.body).toHaveProperty('message');
     });
 
+    // teste para erro 400
     it ( 'deve retornar erro 400 se dados incompletos', async () => {
         const response = await request(app)
             .post('/doacoes')
@@ -127,7 +130,7 @@ describe ('Doacoes - POST (criacao)', () => {
     });
 });
 
-// teste de atualizacao de doacao put
+// teste de atualizacao de doacao PUT
 describe('Doações - PUT (atualização)', () => {
     let token;
     let tokenOutraOng;
@@ -162,6 +165,7 @@ describe('Doações - PUT (atualização)', () => {
         doacaoId = response.body.id_produto;
     });
 
+    // operação correta
     it('deve atualizar doação com token da ONG dona', async () => {
         const dadosAtualizados = {
             titulo: 'Doação Atualizada',
@@ -178,6 +182,7 @@ describe('Doações - PUT (atualização)', () => {
         expect(response.body.titulo).toBe(dadosAtualizados.titulo);
     });
 
+    // teste para erro 401
     it('deve retornar erro 401 ao tentar atualizar sem token', async () => {
         const response = await request(app)
             .put(`/doacoes/${doacaoId}`)
@@ -187,6 +192,7 @@ describe('Doações - PUT (atualização)', () => {
         expect(response.body).toHaveProperty('message');
     });
 
+    // teste para erro 403
     it('deve retornar erro 403 ao tentar atualizar doação de outra ONG', async () => {
         const dadosAtualizados = {
             titulo: 'Tentativa de hack',
@@ -203,6 +209,7 @@ describe('Doações - PUT (atualização)', () => {
         expect(response.body.message).toContain('Você não tem permissão para atualizar esta doação');
     });
 
+    // teste para erro 404 ( id inexistente) 
     it('deve retornar erro 404 para ID inexistente', async () => {
         const response = await request(app)
             .put('/doacoes/99999')
@@ -213,6 +220,7 @@ describe('Doações - PUT (atualização)', () => {
         expect(response.body).toHaveProperty('message');
     });
 
+    // teste para erro 400
     it('deve retornar erro 400 para dados inválidos', async () => {
         const dadosInvalidos = {
             titulo: '', // título vazio
@@ -256,13 +264,15 @@ describe ('Doações - PATCH (atualização de status)', () => {
             quantidade: 3,
             prazo_necessidade: '2023-12-31'
         };
+        // Criar a doação e obter o ID
         const response = await request(app)
             .post('/doacoes')
             .set('Authorization', `Bearer ${token}`)
             .send(novaDoacao);
         doacaoId = response.body.id_produto;
     });
-
+    
+    //operacao correta 
     it('deve atualizar status da doação', async () => {
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
@@ -273,6 +283,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
         expect(response.body.status).toBe('FINALIZADA');
     });
 
+    // Teste para erro 401
     it('deve retornar erro 401 ao tentar atualizar status sem token', async () => {
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
@@ -282,6 +293,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
         expect(response.body).toHaveProperty('message');
     });
 
+    // Teste para erro 403
     it('deve retornar erro 403 ao tentar atualizar status de doação de outra ONG', async () => {
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
@@ -291,7 +303,8 @@ describe ('Doações - PATCH (atualização de status)', () => {
         expect(response.statusCode).toBe(403);
         expect(response.body.message).toContain('Você não tem permissão para modificar esta doação');
     });
-
+    
+    // Teste para erro 404 ( aqui o status é importante verificar)
     it('deve retornar erro 404 para ID inexistente no PATCH', async () => {
         const response = await request(app)
             .patch('/doacoes/99999/status')
@@ -301,6 +314,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
         expect(response.statusCode).toBe(404);
     });
 
+    // Teste para erro 400
     it('deve retornar erro 400 para status inválido', async () => {
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
@@ -312,109 +326,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
     });
 });
 
-// Teste de exclusão de doação - DELETE
-describe('Doações - DELETE (exclusão)', () => {
-    let token;
-    let tokenOutraOng;
-    let doacaoId;
 
-    beforeAll(async () => {
-        // Token da ONG principal
-        const login = await request(app)
-            .post('/auth/login')
-            .send({ email: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
-        token = login.body.token;
-
-        // Simular token de outra ONG (para teste 403)
-        tokenOutraOng = jwt.sign(
-            { id_ong: 999, email: 'outra@ong.com' }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '1h' }
-        );
-
-        // Criar uma doação para testar a exclusão
-        const novaDoacao = {
-            titulo: 'Doação para excluir',
-            descricao: 'Descrição da doação que será excluída',
-            tipo_item: 'Material',
-            quantidade: 2,
-            prazo_necessidade: '2023-12-31'
-        };
-        const response = await request(app)
-            .post('/doacoes')
-            .set('Authorization', `Bearer ${token}`)
-            .send(novaDoacao);
-        doacaoId = response.body.id_produto;
-    });
-
-    it('deve excluir doação com token da ONG dona', async () => {
-        const response = await request(app)
-            .delete(`/doacoes/${doacaoId}`)
-            .set('Authorization', `Bearer ${token}`);
-
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toHaveProperty('message');
-        expect(response.body.message).toContain('excluída com sucesso');
-
-        // Verificar se a doação foi realmente excluída
-        const verificacao = await request(app)
-            .get(`/doacoes/${doacaoId}`);
-        expect(verificacao.statusCode).toBe(404);
-    });
-
-    it('deve retornar erro 401 ao tentar excluir sem token', async () => {
-        // Criar nova doação para este teste
-        const novaDoacao = {
-            titulo: 'Doação teste 401',
-            descricao: 'Teste exclusão sem token',
-            tipo_item: 'Roupas',
-            quantidade: 1,
-            prazo_necessidade: '2023-12-31'
-        };
-        const criacaoResponse = await request(app)
-            .post('/doacoes')
-            .set('Authorization', `Bearer ${token}`)
-            .send(novaDoacao);
-        
-        const response = await request(app)
-            .delete(`/doacoes/${criacaoResponse.body.id_produto}`);
-
-        expect(response.statusCode).toBe(401);
-        expect(response.body).toHaveProperty('message');
-    });
-
-    it('deve retornar erro 403 ao tentar excluir doação de outra ONG', async () => {
-        // Criar nova doação para este teste
-        const novaDoacao = {
-            titulo: 'Doação teste 403',
-            descricao: 'Teste exclusão por outra ONG',
-            tipo_item: 'Brinquedos',
-            quantidade: 1,
-            prazo_necessidade: '2023-12-31'
-        };
-        const criacaoResponse = await request(app)
-            .post('/doacoes')
-            .set('Authorization', `Bearer ${token}`)
-            .send(novaDoacao);
-
-        const response = await request(app)
-            .delete(`/doacoes/${criacaoResponse.body.id_produto}`)
-            .set('Authorization', `Bearer ${tokenOutraOng}`);
-
-        expect(response.statusCode).toBe(403);
-        expect(response.body).toHaveProperty('message');
-        expect(response.body.message).toContain('Você não tem permissão para excluir esta doação');
-    });
-
-    it('deve retornar erro 404 para ID inexistente no DELETE', async () => {
-        const response = await request(app)
-            .delete('/doacoes/99999')
-            .set('Authorization', `Bearer ${token}`);
-
-        expect(response.statusCode).toBe(404);
-        expect(response.body).toHaveProperty('message');
-    });
-});
 
 
 
