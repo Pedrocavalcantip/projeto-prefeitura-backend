@@ -1,17 +1,16 @@
 // verificacao em ordem : get publico e privado.
 
-const request = require('suepertest');
+const request = require('supertest');
 const jwt = require('jsonwebtoken');
-const app = require('../../src/app');
+const app = require('../../index'); 
 
 describe ('Doações -GET publico', () => {
     it (' deve retornar lista de doacoes ativass (sem o token)', async () => {
         const response = await request(app).get('/doacoes');
         expect(response.statusCode).toBe(200);
-        expect(Array.isArray(response.body.doacoes)).toBe(true);
-
-        if (response.body.doacoes.length > 0) {
-            expect(response.body.every(d => dstatus === 'ATIVA')).toBe(true);
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 0) {
+            expect(response.body.every(d => d.status === 'ATIVA')).toBe(true);
         }
     });
 
@@ -52,10 +51,9 @@ describe('Doações - GET privado', () => {
             .set('Authorization', `Bearer ${token}`);
 
         expect(response.statusCode).toBe(200);
-        expect(Array.isArray(response.body.doacoes)).toBe(true);
-
-        if (response.body.doacoes.length > 0) {
-            expect(response.body.doacoes.every(d => d.ong_id === login.body.id_ong)).toBe(true);
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 0) {
+            expect(response.body.every(d => d.ong_id === decoded.id_ong)).toBe(true);
         }
     });
 
@@ -66,3 +64,66 @@ describe('Doações - GET privado', () => {
         expect(response.body).toHaveProperty('message');
     });
 });
+
+// Teste de criacao de doacao 
+describe ('Doacoes - POST (criacao)', () => {
+    let token;
+
+    beforeAll(async () => {
+        const login = await request(app)
+            .post('/auth/login')
+            .send({ email: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
+        token = login.body.token;
+        decoded = jwt.decode(token);
+    });
+
+    it( 'deve criar uma doacao com token valido', async () => {
+        const novaDoacao = {
+            titulo: 'Teste de Doação',
+            descricao: 'Descrição da doação de teste',
+            tipo_item: 'Alimento',
+            quantidade: 10,
+            prazo_necessidade: '2023-12-31'
+    };
+
+    const response = await request(app)
+        .post('/doacoes')
+        .set('Authorization', `Bearer ${token}`)
+        .send(novaDoacao);
+
+    expect(response.statusCode).toBe(201);
+    expect(response.body).toHaveProperty('id_produto');
+    expect(response.body.titulo).toBe(novaDoacao.titulo);
+
+    });
+
+    it( 'deve retornar erro 401 ao tentar criar doação sem token', async () => {
+        const response = await request(app)
+            .post('/doacoes')
+            .send({
+                titulo: 'Doação sem token',
+                descricao: 'Descrição da doação sem token',
+                tipo_item: 'Roupas',
+                quantidade: 5,
+                prazo_necessidade: '2023-12-31'
+            });
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty('message');
+    });
+
+    it ( 'deve retornar erro 400 se dados incompletos', async () => {
+        const response = await request(app)
+            .post('/doacoes')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                titulo: '',
+                descricao: '',
+                tipo_item: '',
+                quantidade: 1,
+                prazo_necessidade: '2023-12-31'
+            });
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('message');
+    });
+});
+

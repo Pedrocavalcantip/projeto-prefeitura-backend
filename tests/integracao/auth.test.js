@@ -1,6 +1,6 @@
 //autentificacao de login, teste de credenciais validas/ invalidas 
 const request = require('supertest');
-const app = require('../../src/app');
+const app = require('../../index'); 
 
 describe( 'Autentificação - Login', () => {
     it('autenticação com credenciais válidas', async () => {
