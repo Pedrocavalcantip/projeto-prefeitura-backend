@@ -174,7 +174,7 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
   }
   
   if (doacao.ong_id !== ongId) {
-    throw new Error('Você não tem permissão para atualizar esta doação');
+    throw new Error('Você não tem permissão para modificar esta doação');
   }
   
   return await prisma.produtos.update({

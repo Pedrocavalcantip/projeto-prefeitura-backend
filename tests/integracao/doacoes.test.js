@@ -208,7 +208,7 @@ describe('Doações - PUT (atualização)', () => {
 
         expect(response.statusCode).toBe(403);
         expect(response.body).toHaveProperty('message');
-        expect(response.body.message).toContain('Você não tem permissão para atualizar esta doação');
+        expect(response.body.message).toContain('Você não tem permissão para modificar esta doação');
     });
 
     // teste para erro 404 ( id inexistente) 

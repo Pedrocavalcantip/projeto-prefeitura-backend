@@ -48,13 +48,13 @@ describe('Realocações - GET com token', () => {
 
     if (lista.body.length === 0) return;
 
-    const id = lista.body[0].id_realocacao;
+    const id = lista.body[0].id_produto;
     const response = await request(app)
       .get(`/realocacoes/${id}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toHaveProperty('id_realocacao', id);
+    expect(response.body).toHaveProperty('id_produto', id);
     expect(response.body.status).toBe('ATIVA');
   });
 
@@ -96,7 +96,7 @@ describe('Realocações - GET com token', () => {
 
     expect(response.statusCode).toBe(200);
     if (response.body.length > 0) {
-      expect(response.body.every(r => r.id_ong === decoded.id_ong)).toBe(true);
+      expect(response.body.every(r => r.ong_id === decoded.id_ong)).toBe(true);
     }
   });
 });
@@ -122,7 +122,7 @@ describe('Realocações - PUT (atualização)', () => {
         quantidade: 3
       });
 
-    realocacaoId = response.body.id_realocacao;
+    realocacaoId = response.body.id_produto;
   });
 
   it('deve atualizar realocação com sucesso', async () => {
@@ -182,7 +182,7 @@ describe('Realocações - POST (criação)', () => {
 
 
     expect(response.statusCode).toBe(201);
-    expect(response.body).toHaveProperty('id_realocacao');
+    expect(response.body).toHaveProperty('id_produto');
     expect(response.body.titulo).toBe(novaRealocacao.titulo);
   });
 

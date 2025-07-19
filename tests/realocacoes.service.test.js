@@ -77,18 +77,24 @@ describe('Realocacoes Service - Testes Unitários', () => {
   // STATUS - sucesso
   test('updateStatusRealocacaoService deve atualizar status se ONG for dona', async () => {
     prisma.produtos.findUnique.mockResolvedValue({ id_produto: 1, ong_id: 42 });
-    prisma.produtos.update.mockResolvedValue({ status: 'INATIVA' });
+    prisma.produtos.update.mockResolvedValue({ status: 'FINALIZADA' });
 
-    const resultado = await updateStatusRealocacaoService(1, 'INATIVA', 42);
-    expect(resultado.status).toBe('INATIVA');
+    const resultado = await updateStatusRealocacaoService(1, 'FINALIZADA', 42);
+    expect(resultado.status).toBe('FINALIZADA');
   });
 
   // STATUS - erro de permissão
   test('updateStatusRealocacaoService deve lançar erro se ONG não for dona', async () => {
     prisma.produtos.findUnique.mockResolvedValue({ id_produto: 1, ong_id: 99 });
 
-    await expect(updateStatusRealocacaoService(1, 'INATIVA', 42))
+    await expect(updateStatusRealocacaoService(1, 'FINALIZADA', 42))
       .rejects.toThrow('Você não tem permissão para modificar esta realocação');
+  });
+
+  // STATUS - erro status inválido
+  test('updateStatusRealocacaoService deve lançar erro para status inválido', async () => {
+    await expect(updateStatusRealocacaoService(1, 'INATIVA', 42))
+      .rejects.toThrow('Status deve ser ATIVA ou FINALIZADA');
   });
 
   // FIND BY ID - sucesso
