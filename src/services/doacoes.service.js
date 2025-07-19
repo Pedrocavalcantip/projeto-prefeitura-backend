@@ -185,6 +185,11 @@ exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
   if (isNaN(idNumerico) || idNumerico <= 0) {
     throw new Error('ID deve ser um número válido maior que zero');
   }
+  // Validação do status
+  // Só permitir as duas transições possíveis:
+  if (!['ATIVA', 'FINALIZADA'].includes(newStatus)) {
+    throw new Error('Status inválido. Use apenas ATIVA ou FINALIZADA');
+  }
 
   // Verificar propriedade
   const doacao = await prisma.produtos.findUnique({
