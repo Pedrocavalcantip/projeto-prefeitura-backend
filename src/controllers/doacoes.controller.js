@@ -87,10 +87,30 @@ const update = async (req, res) => {
       return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
 
+    // Validação de dados inválidos
+    if (doacaoEditada.titulo !== undefined && doacaoEditada.titulo.trim() === '') {
+      return res.status(400).json({ message: 'Título não pode estar vazio.' });
+    }
+    
+    if (doacaoEditada.descricao !== undefined && doacaoEditada.descricao.trim() === '') {
+      return res.status(400).json({ message: 'Descrição não pode estar vazia.' });
+    }
+    
+    if (doacaoEditada.tipo_item !== undefined && doacaoEditada.tipo_item.trim() === '') {
+      return res.status(400).json({ message: 'Tipo do item não pode estar vazio.' });
+    }
+    
+    if (doacaoEditada.quantidade !== undefined && (isNaN(doacaoEditada.quantidade) || doacaoEditada.quantidade <= 0)) {
+      return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
+    }
+
     const doacaoAtualizada = await doacoesService.updateDoacaoService(id, doacaoEditada, ongId);
     res.status(200).json(doacaoAtualizada);
   } catch (error) {
-    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('permissão')) {
       return res.status(403).json({ message: error.message });
     }
     res.status(500).json({ message: error.message });
@@ -117,7 +137,10 @@ const updateStatus = async (req, res) => {
     const doacaoAtualizada = await doacoesService.updateStatusDoacaoService(id, status, ongId);
     res.status(200).json(doacaoAtualizada);
   } catch (error) {
-    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('permissão')) {
       return res.status(403).json({ message: error.message });
     }
     res.status(500).json({ message: error.message });
@@ -138,7 +161,10 @@ const deleteDoacao = async (req, res) => {
     await doacoesService.deleteDoacaoService(id, ongId);
     res.status(204).send();
   } catch (error) {
-    if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('permissão')) {
       return res.status(403).json({ message: error.message });
     }
     res.status(500).json({ message: error.message });

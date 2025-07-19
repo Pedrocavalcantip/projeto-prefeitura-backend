@@ -80,10 +80,15 @@ describe('Doacoes Service - Testes Unitários', () => {
 
   it('updateStatusDoacaoService deve atualizar status se ONG for dona', async () => {
     prisma.produtos.findUnique.mockResolvedValue({ ong_id: 1 });
-    prisma.produtos.update.mockResolvedValue({ status: 'INATIVA' });
+    prisma.produtos.update.mockResolvedValue({ status: 'FINALIZADA' });
 
-    const result = await updateStatusDoacaoService(1, 'INATIVA', 1);
-    expect(result.status).toBe('INATIVA');
+    const result = await updateStatusDoacaoService(1, 'FINALIZADA', 1);
+    expect(result.status).toBe('FINALIZADA');
+  });
+
+  it('updateStatusDoacaoService deve lançar erro para status inválido', async () => {
+    await expect(updateStatusDoacaoService(1, 'STATUS_INVALIDO', 1))
+      .rejects.toThrow('Status inválido. Use apenas ATIVA ou FINALIZADA');
   });
 
   it('deleteDoacaoService deve deletar se ONG for dona', async () => {

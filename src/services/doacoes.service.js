@@ -28,6 +28,7 @@ exports.findAllDoacoesService = async (filtros = {}) => {
       tipo_item: true,
       urgencia: true,
       quantidade: true,
+      status: true,             // ← Adicionado para o teste verificar
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
@@ -66,6 +67,7 @@ exports.findDoacoesDaOngService = async (ongId) => {
       urgencia: true,
       quantidade: true,      // ← Só a ONG dona vê
       status: true,          // ← Só a ONG dona vê
+      ong_id: true,          // ← Adicionado para o teste verificar
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true
@@ -122,12 +124,24 @@ exports.findByIdDoacaoService = async (id) => {
 
 // Criar doação
 exports.createDoacaoService = async (doacaoData, ongId) => {
+  // Converter data para ISO DateTime se fornecida
+  let prazoNecessidade = null;
+  if (doacaoData.prazo_necessidade) {
+    // Se a data está em formato YYYY-MM-DD, converter para DateTime
+    const dataString = doacaoData.prazo_necessidade;
+    if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      prazoNecessidade = new Date(dataString + 'T23:59:59.000Z').toISOString();
+    } else {
+      prazoNecessidade = new Date(dataString).toISOString();
+    }
+  }
+  
   return await prisma.produtos.create({
     data: {
       titulo: doacaoData.titulo,
       descricao: doacaoData.descricao,
       tipo_item: doacaoData.tipo_item,
-      prazo_necessidade: doacaoData.prazo_necessidade,
+      prazo_necessidade: prazoNecessidade,
       url_imagem: doacaoData.url_imagem,
       urgencia: doacaoData.urgencia || 'MEDIA',
       quantidade: doacaoData.quantidade || 1,
@@ -160,7 +174,7 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
   }
   
   if (doacao.ong_id !== ongId) {
-    throw new Error('Você não tem permissão para modificar esta doação');
+    throw new Error('Você não tem permissão para atualizar esta doação');
   }
   
   return await prisma.produtos.update({
@@ -184,6 +198,11 @@ exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
   // Validação do ID
   if (isNaN(idNumerico) || idNumerico <= 0) {
     throw new Error('ID deve ser um número válido maior que zero');
+  }
+  // Validação do status
+  // Só permitir as duas transições possíveis:
+  if (!['ATIVA', 'FINALIZADA'].includes(newStatus)) {
+    throw new Error('Status inválido. Use apenas ATIVA ou FINALIZADA');
   }
 
   // Verificar propriedade
