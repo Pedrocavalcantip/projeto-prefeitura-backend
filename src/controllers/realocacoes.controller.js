@@ -1,22 +1,18 @@
 const realocacoesService = require('../services/realocacoes.service');
-const { validateToken } = require('../utils/tokenUtils');
 
-// Listar todas as realocações (públicas ou da ONG autenticada)
+// Listar realocações: catálogo entre ONGs OU realocações da ONG logada
 const findAll = async (req, res) => {
   try {
     const { minha } = req.query;
+    const ongId = req.id_ong; // ← Vem do authMiddleware (sempre presente)
 
+    // Se quer ver apenas suas próprias realocações
     if (minha === 'true') {
-      const tokenValidation = validateToken(req.headers.authorization);
-      if (!tokenValidation.valid) {
-        return res.status(401).json({ message: tokenValidation.error });
-      }
-
-      const ongId = tokenValidation.decoded.id_ong;
       const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
       return res.status(200).json(realocacoes);
     }
 
+    // Catálogo geral para ONGs (sem filtro de ONG específica)
     const realocacoes = await realocacoesService.findAllRealocacoesService();
     res.status(200).json(realocacoes);
   } catch (error) {
@@ -24,7 +20,7 @@ const findAll = async (req, res) => {
   }
 };
 
-// Buscar realocação por ID
+// Buscar realocação específica (ONGs podem ver detalhes para contato)
 const findById = async (req, res) => {
   try {
     const { id } = req.params;
