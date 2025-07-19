@@ -3,8 +3,11 @@ const realocacoesService = require('../services/realocacoes.service');
 // Listar realocações: catálogo entre ONGs OU realocações da ONG logada
 const findAll = async (req, res) => {
   try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
     const { minha } = req.query;
-    const ongId = req.id_ong; // ← Vem do authMiddleware (sempre presente)
+    const ongId = req.id_ong;
 
     // Se quer ver apenas suas próprias realocações
     if (minha === 'true') {
@@ -12,8 +15,12 @@ const findAll = async (req, res) => {
       return res.status(200).json(realocacoes);
     }
 
-    // Catálogo geral para ONGs (sem filtro de ONG específica)
-    const realocacoes = await realocacoesService.findAllRealocacoesService();
+    // Catálogo geral para ONGs, com filtros opcionais
+    const filtros = {
+      titulo: req.query.titulo,
+      tipo_item: req.query.tipo_item
+    };
+    const realocacoes = await realocacoesService.findAllRealocacoesService(filtros);
     res.status(200).json(realocacoes);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -23,6 +30,9 @@ const findAll = async (req, res) => {
 // Buscar realocação específica (ONGs podem ver detalhes para contato)
 const findById = async (req, res) => {
   try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
     const { id } = req.params;
 
     if (isNaN(id) || parseInt(id) <= 0) {
@@ -42,6 +52,9 @@ const findById = async (req, res) => {
 // Criar nova realocação
 const create = async (req, res) => {
   try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
     const newRealocacao = req.body;
     const ongId = req.id_ong;
 
@@ -71,6 +84,9 @@ const create = async (req, res) => {
 // Atualizar realocação
 const update = async (req, res) => {
   try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
     const { id } = req.params;
     const realocacaoEditada = req.body;
     const ongId = req.id_ong;
@@ -105,6 +121,9 @@ const update = async (req, res) => {
 // Atualizar status da realocação
 const updateStatus = async (req, res) => {
   try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
     const { id } = req.params;
     const { status } = req.body;
     const ongId = req.id_ong;
@@ -133,6 +152,9 @@ const updateStatus = async (req, res) => {
 // Deletar realocação
 const deleteRealocacao = async (req, res) => {
   try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
     const { id } = req.params;
     const ongId = req.id_ong;
 
