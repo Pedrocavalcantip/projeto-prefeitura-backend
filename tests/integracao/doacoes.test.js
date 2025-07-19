@@ -330,7 +330,6 @@ describe ('Doações - PATCH (atualização de status)', () => {
 });
 
 // Deletar doação
-// Teste de exclusão de doação - DELETE
 describe('Doações - DELETE (exclusão)', () => {
     let token;
     let tokenOutraOng;
@@ -426,7 +425,7 @@ describe('Doações - DELETE (exclusão)', () => {
             .delete('/doacoes/99999')
             .set('Authorization', `Bearer ${token}`);
 
-        expect(response.statusCode).toBe(403); 
+        expect(response.statusCode).toBe(404); // Agora deve ser 404 em vez de 403
         expect(response.body).toHaveProperty('message');
     });
 });
