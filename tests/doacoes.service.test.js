@@ -54,13 +54,34 @@ describe('Doacoes Service - Testes Unitários', () => {
     await expect(findByIdDoacaoService(99)).rejects.toThrow('Doação não encontrada');
   });
 
-  it('createDoacaoService deve criar doação com dados', async () => {
+  it('createDoacaoService deve criar doação com todos os campos obrigatórios', async () => {
     const mock = { id_produto: 10 };
     prisma.produtos.create.mockResolvedValue(mock);
 
-    const result = await createDoacaoService({ titulo: 'Doar', descricao: '', tipo_item: 'roupa' }, 1);
+    const novaDoacao = {
+      titulo: 'Doar',
+      descricao: 'Descrição teste',
+      tipo_item: 'Roupas e Calçados',
+      quantidade: 2,
+      prazo_necessidade: '2025-12-31',
+      url_imagem: 'https://exemplo.com/imagem.jpg',
+      urgencia: 'MEDIA',
+      whatsapp: '11999999999',
+      email: 'teste@exemplo.com'
+    };
+    const result = await createDoacaoService(novaDoacao, 1);
 
-    expect(prisma.produtos.create).toHaveBeenCalled();
+    const chamada = prisma.produtos.create.mock.calls[0][0].data;
+    // Verifica todos os campos obrigatórios
+    Object.entries(novaDoacao).forEach(([key, value]) => {
+      if (chamada[key] !== undefined) {
+        if (key === 'prazo_necessidade') {
+          expect(chamada[key].startsWith(value)).toBe(true);
+        } else {
+          expect(chamada[key]).toBe(value);
+        }
+      }
+    });
     expect(result).toEqual(mock);
   });
 
@@ -79,7 +100,7 @@ describe('Doacoes Service - Testes Unitários', () => {
   });
 
   it('updateStatusDoacaoService deve atualizar status se ONG for dona', async () => {
-    prisma.produtos.findUnique.mockResolvedValue({ ong_id: 1 });
+    prisma.produtos.findUnique.mockResolvedValue({ ong_id: 1, status: 'ATIVA' });
     prisma.produtos.update.mockResolvedValue({ status: 'FINALIZADA' });
 
     const result = await updateStatusDoacaoService(1, 'FINALIZADA', 1);
