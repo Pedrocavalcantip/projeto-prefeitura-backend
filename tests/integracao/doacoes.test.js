@@ -186,20 +186,32 @@ describe ('Doacoes - POST (criacao)', () => {
         expect(response.body).toHaveProperty('message');
     });
 
-    // teste para erro 400
-    it ( 'deve retornar erro 400 se dados incompletos', async () => {
+    // teste para erro 400 - campos obrigatórios
+    const camposObrigatorios = [
+      'titulo', 'descricao', 'tipo_item', 'prazo_necessidade', 'url_imagem', 'urgencia', 'whatsapp', 'email'
+    ];
+    camposObrigatorios.forEach(campo => {
+      it(`deve retornar erro 400 se campo obrigatório '${campo}' estiver ausente ou vazio`, async () => {
+        const doacaoValida = {
+          titulo: 'Teste',
+          descricao: 'desc',
+          tipo_item: 'Roupas e Calçados',
+          quantidade: 1,
+          prazo_necessidade: '2023-12-31',
+          url_imagem: 'https://exemplo.com/imagem.jpg',
+          urgencia: 'MEDIA',
+          whatsapp: '11999999999',
+          email: 'teste@exemplo.com'
+        };
+        doacaoValida[campo] = '';
         const response = await request(app)
-            .post('/doacoes')
-            .set('Authorization', `Bearer ${token}`)
-            .send({
-                titulo: '',
-                descricao: '',
-                tipo_item: '',
-                quantidade: 1,
-                prazo_necessidade: '2023-12-31'
-            });
+          .post('/doacoes')
+          .set('Authorization', `Bearer ${token}`)
+          .send(doacaoValida);
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty('message');
+        expect(response.body.message).toContain(campo);
+      });
     });
 });
 
