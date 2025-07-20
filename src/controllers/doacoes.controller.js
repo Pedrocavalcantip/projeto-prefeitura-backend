@@ -4,23 +4,46 @@ const { validateToken } = require('../utils/tokenUtils');
 // Listar todas as doações OU doações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
   try {
-    const { minha } = req.query;
-    
+    const { minha, tipo_item } = req.query;
+
+    // Validação de tipo_item (categorias padronizadas) no filtro público
+    if (tipo_item !== undefined) {
+      const categoriasValidas = [
+        'Eletrodomésticos e Móveis',
+        'Utensílios Gerais',
+        'Roupas e Calçados',
+        'Saúde e Higiene',
+        'Materiais Educativos e Culturais',
+        'Itens de Inclusão e Mobilidade',
+        'Eletrônicos',
+        'Itens Pet',
+        'Outros'
+      ];
+      if (!categoriasValidas.includes(tipo_item)) {
+        return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
+      }
+    }
+
     // Se tem query 'minha=true' e token de autorização
     if (minha === 'true') {
       const tokenValidation = validateToken(req.headers.authorization);
-      
+
       if (!tokenValidation.valid) {
         return res.status(401).json({ message: tokenValidation.error });
       }
-      
+
       const ongId = tokenValidation.decoded.id_ong;
       const doacoes = await doacoesService.findDoacoesDaOngService(ongId);
       return res.status(200).json(doacoes);
     }
-    
-    // Caso padrão: marketplace público
-    const doacoes = await doacoesService.findAllDoacoesService();
+    // Se não tem query 'minha=true':
+    const filtros = {
+      titulo: req.query.titulo,
+      tipo_item: req.query.tipo_item
+    };
+
+    // Caso padrão: marketplace público, com filtros opcionais
+    const doacoes = await doacoesService.findAllDoacoesService(filtros);
     res.status(200).json(doacoes);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -52,25 +75,74 @@ const create = async (req, res) => {
   try {
     const newDoacao = req.body;
     const ongId = req.id_ong;
-
-    // Validação básica
-    if (!newDoacao.titulo || !newDoacao.descricao || !newDoacao.tipo_item) {
-      return res.status(400).json({ message: 'Dados incompletos. Título, descrição e tipo de item são obrigatórios.' });
+    // Validação de tipo_item (categorias padronizadas)
+    const categoriasValidas = [
+      'Eletrodomésticos e Móveis',
+      'Utensílios Gerais',
+      'Roupas e Calçados',
+      'Saúde e Higiene',
+      'Materiais Educativos e Culturais',
+      'Itens de Inclusão e Mobilidade',
+      'Eletrônicos',
+      'Itens Pet',
+      'Outros'
+    ];
+    if (!categoriasValidas.includes(newDoacao.tipo_item)) {
+      return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
     }
 
-    // Validação adicional de campos vazios ou apenas espaços
-    if (newDoacao.titulo.trim() === '' || newDoacao.descricao.trim() === '' || newDoacao.tipo_item.trim() === '') {
-      return res.status(400).json({ message: 'Título, descrição e tipo de item não podem estar vazios.' });
+
+    // Validação de todos os campos obrigatórios
+    const obrigatorios = [
+      { campo: 'titulo', valor: newDoacao.titulo },
+      { campo: 'descricao', valor: newDoacao.descricao },
+      { campo: 'tipo_item', valor: newDoacao.tipo_item },
+      { campo: 'prazo_necessidade', valor: newDoacao.prazo_necessidade },
+      { campo: 'url_imagem', valor: newDoacao.url_imagem },
+      { campo: 'urgencia', valor: newDoacao.urgencia },
+      { campo: 'whatsapp', valor: newDoacao.whatsapp },
+      { campo: 'email', valor: newDoacao.email }
+    ];
+
+    for (const { campo, valor } of obrigatorios) {
+      if (valor === undefined || valor === null || (typeof valor === 'string' && valor.trim() === '')) {
+        return res.status(400).json({ message: `Campo obrigatório '${campo}' está ausente ou vazio.` });
+      }
     }
 
-    // Validação de quantidade (se fornecida, deve ser válida)
-    if (newDoacao.quantidade && (isNaN(newDoacao.quantidade) || newDoacao.quantidade <= 0)) {
+    // Validação de urgencia (enum)
+    const urgenciasValidas = ['BAIXA', 'MEDIA', 'ALTA'];
+    if (!urgenciasValidas.includes(newDoacao.urgencia)) {
+      return res.status(400).json({ message: "Urgência deve ser BAIXA, MEDIA ou ALTA." });
+    }
+
+    // Validação de url_imagem (formato simples)
+    const urlRegex = /^(https?:\/\/)[\w\-]+(\.[\w\-]+)+[/#?]?.*$/;
+    if (!urlRegex.test(newDoacao.url_imagem)) {
+      return res.status(400).json({ message: "url_imagem deve ser uma URL válida." });
+    }
+
+    // Validação de email (formato)
+    const emailRegex = /^[\w-.]+@[\w-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(newDoacao.email)) {
+      return res.status(400).json({ message: "Email deve ser válido." });
+    }
+
+    // Validação de whatsapp (formato simples, só números, 10-13 dígitos)
+    const whatsappRegex = /^\d{10,13}$/;
+    if (!whatsappRegex.test(newDoacao.whatsapp)) {
+      return res.status(400).json({ message: "Whatsapp deve conter apenas números (10 a 13 dígitos)." });
+    }
+
+    // Validação de quantidade (deve ser válida)
+    if (isNaN(newDoacao.quantidade) || newDoacao.quantidade <= 0) {
       return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
     }
 
     const doacaoCriada = await doacoesService.createDoacaoService(newDoacao, ongId);
     res.status(201).json(doacaoCriada);
   } catch (error) {
+    console.log('Erro ao criar doação:', error);
     res.status(500).json({ message: error.message });
   }
 };

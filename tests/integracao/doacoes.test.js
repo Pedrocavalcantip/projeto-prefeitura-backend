@@ -14,6 +14,54 @@ describe ('Doações -GET publico', () => {
         }
     });
 
+    it('GET /doacoes?titulo=Teste deve filtrar por título (sem token)', async () => {
+        // Cria uma doação específica para garantir o filtro
+        await request(app)
+            .post('/doacoes')
+            .send({
+                titulo: 'TesteFiltroPublico',
+                descricao: 'Doação para filtro público',
+                tipo_item: 'Roupas e Calçados',
+                quantidade: 1,
+                prazo_necessidade: '2025-12-31',
+                url_imagem: 'https://exemplo.com/imagem.jpg',
+                urgencia: 'MEDIA',
+                whatsapp: '11999999999',
+                email: 'teste@exemplo.com'
+            });
+        const response = await request(app).get('/doacoes?titulo=TesteFiltroPublico');
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 0) {
+            expect(response.body.every(d => d.titulo.includes('TesteFiltroPublico'))).toBe(true);
+        }
+    });
+
+    it('GET /doacoes?tipo_item=Roupas e Calçados deve filtrar por tipo_item (sem token)', async () => {
+        const response = await request(app).get('/doacoes?tipo_item=Roupas e Calçados');
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 0) {
+            expect(response.body.every(d => d.tipo_item === 'Roupas e Calçados')).toBe(true);
+        }
+    });
+
+    it('GET /doacoes?tipo_item=CategoriaInvalida deve retornar erro 400', async () => {
+        const response = await request(app).get('/doacoes?tipo_item=CategoriaInvalida');
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body.message).toContain('categorias válidas');
+    });
+
+    it('GET /doacoes?titulo=TesteFiltroPublico&tipo_item=Roupas e Calçados deve filtrar por ambos (sem token)', async () => {
+        const response = await request(app).get('/doacoes?titulo=TesteFiltroPublico&tipo_item=Roupas e Calçados');
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 0) {
+            expect(response.body.every(d => d.titulo.includes('TesteFiltroPublico') && d.tipo_item === 'Roupas e Calçados')).toBe(true);
+        }
+    });
+
     it('GET /doacoes/:id deve retornar detalhes da doação (sem token)', async () => {
     // Primeiro, pega uma doação existente
     const lista = await request(app).get('/doacoes');
@@ -50,7 +98,6 @@ describe('Doações - GET privado', () => {
         const response = await request(app)
             .get('/doacoes?minha=true')
             .set('Authorization', `Bearer ${token}`);
-
         expect(response.statusCode).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
         if (response.body.length > 0) {
@@ -84,20 +131,44 @@ describe ('Doacoes - POST (criacao)', () => {
         const novaDoacao = {
             titulo: 'Teste de Doação',
             descricao: 'Descrição da doação de teste',
-            tipo_item: 'Alimento',
+            tipo_item: 'Roupas e Calçados', // categoria válida
             quantidade: 10,
-            prazo_necessidade: '2023-12-31'
-    };
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
+        };
 
-    const response = await request(app)
-        .post('/doacoes')
-        .set('Authorization', `Bearer ${token}`)
-        .send(novaDoacao);
+        const response = await request(app)
+            .post('/doacoes')
+            .set('Authorization', `Bearer ${token}`)
+            .send(novaDoacao);
 
-    expect(response.statusCode).toBe(201);
-    expect(response.body).toHaveProperty('id_produto');
-    expect(response.body.titulo).toBe(novaDoacao.titulo);
+        expect(response.statusCode).toBe(201);
+        expect(response.body).toHaveProperty('id_produto');
+        expect(response.body.titulo).toBe(novaDoacao.titulo);
+    });
 
+    it('deve retornar erro 400 ao criar doação com categoria inválida', async () => {
+        const novaDoacao = {
+            titulo: 'Teste Categoria Inválida',
+            descricao: 'Descrição',
+            tipo_item: 'CategoriaInvalida', // categoria inválida
+            quantidade: 5,
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
+        };
+        const response = await request(app)
+            .post('/doacoes')
+            .set('Authorization', `Bearer ${token}`)
+            .send(novaDoacao);
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body.message).toContain('categorias válidas');
     });
 
     // teste para erro 401
@@ -156,9 +227,13 @@ describe('Doações - PUT (atualização)', () => {
         const novaDoacao = {
             titulo: 'Doação para atualizar',
             descricao: 'Descrição original',
-            tipo_item: 'Alimento',
+            tipo_item: 'Utensílios Gerais',
             quantidade: 5,
-            prazo_necessidade: '2023-12-31'
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
         };
         const response = await request(app)
             .post('/doacoes')
@@ -262,9 +337,13 @@ describe ('Doações - PATCH (atualização de status)', () => {
         const novaDoacao = {
             titulo: 'Doação para status',
             descricao: 'Teste de status',
-            tipo_item: 'Roupas',
+            tipo_item: 'Itens Pet',
             quantidade: 3,
-            prazo_necessidade: '2023-12-31'
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
         };
         // Criar a doação e obter o ID
         const response = await request(app)
@@ -352,9 +431,13 @@ describe('Doações - DELETE (exclusão)', () => {
         const novaDoacao = {
             titulo: 'Doação para excluir - sucesso',
             descricao: 'Teste de exclusão bem-sucedida',
-            tipo_item: 'Material',
+            tipo_item: 'Saúde e Higiene',
             quantidade: 1,
-            prazo_necessidade: '2023-12-31'
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
         };
         const criacaoResponse = await request(app)
             .post('/doacoes')
@@ -379,9 +462,13 @@ describe('Doações - DELETE (exclusão)', () => {
         const novaDoacao = {
             titulo: 'Doação teste 401',
             descricao: 'Teste exclusão sem token',
-            tipo_item: 'Roupas',
+            tipo_item: 'Materiais Educativos e Culturais',
             quantidade: 1,
-            prazo_necessidade: '2023-12-31'
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
         };
         const criacaoResponse = await request(app)
             .post('/doacoes')
@@ -401,9 +488,13 @@ describe('Doações - DELETE (exclusão)', () => {
         const novaDoacao = {
             titulo: 'Doação teste 403',
             descricao: 'Teste exclusão por outra ONG',
-            tipo_item: 'Brinquedos',
+            tipo_item: 'Eletrônicos',
             quantidade: 1,
-            prazo_necessidade: '2023-12-31'
+            prazo_necessidade: '2023-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
         };
         const criacaoResponse = await request(app)
             .post('/doacoes')
