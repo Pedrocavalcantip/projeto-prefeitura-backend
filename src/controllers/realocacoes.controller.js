@@ -52,59 +52,143 @@ const findById = async (req, res) => {
 // Criar nova realocação
 const create = async (req, res) => {
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
     const newRealocacao = req.body;
     const ongId = req.id_ong;
 
-    if (!newRealocacao.titulo || !newRealocacao.descricao || !newRealocacao.tipo_item) {
-      return res.status(400).json({ message: 'Título, descrição e tipo de item não podem estar vazios.' });
+    // Validação de todos os campos obrigatórios
+    const obrigatorios = [
+      { campo: 'titulo', valor: newRealocacao.titulo },
+      { campo: 'descricao', valor: newRealocacao.descricao },
+      { campo: 'tipo_item', valor: newRealocacao.tipo_item },
+      { campo: 'url_imagem', valor: newRealocacao.url_imagem },
+      { campo: 'whatsapp', valor: newRealocacao.whatsapp },
+      { campo: 'email', valor: newRealocacao.email }
+    ];
+
+    for (const { campo, valor } of obrigatorios) {
+      if (valor === undefined || valor === null || (typeof valor === 'string' && valor.trim() === '')) {
+        return res.status(400).json({ message: `Campo obrigatório '${campo}' está ausente ou vazio.` });
+      }
     }
 
-    if (
-      newRealocacao.titulo.trim() === '' ||
-      newRealocacao.descricao.trim() === '' ||
-      newRealocacao.tipo_item.trim() === ''
-    ) {
-      return res.status(400).json({ message: 'Título, descrição e tipo de item não podem estar vazios.' });
+    // Validação de tipo_item (categorias padronizadas)
+    const categoriasValidas = [
+      'Eletrodomésticos e Móveis',
+      'Utensílios Gerais',
+      'Roupas e Calçados',
+      'Saúde e Higiene',
+      'Materiais Educativos e Culturais',
+      'Itens de Inclusão e Mobilidade',
+      'Eletrônicos',
+      'Itens Pet',
+      'Outros'
+    ];
+    if (!categoriasValidas.includes(newRealocacao.tipo_item)) {
+      return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
     }
 
-    if (newRealocacao.quantidade && (isNaN(newRealocacao.quantidade) || newRealocacao.quantidade <= 0)) {
+    // Validação de url_imagem (formato simples)
+    const urlRegex = /^(https?:\/\/)[\w\-]+(\.[\w\-]+)+[/#?]?.*$/;
+    if (!urlRegex.test(newRealocacao.url_imagem)) {
+      return res.status(400).json({ message: "url_imagem deve ser uma URL válida." });
+    }
+
+    // Validação de email (formato)
+    const emailRegex = /^[\w-.]+@[\w-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(newRealocacao.email)) {
+      return res.status(400).json({ message: "Email deve ser válido." });
+    }
+
+    // Validação de whatsapp (formato simples, só números, 10-13 dígitos)
+    const whatsappRegex = /^\d{10,13}$/;
+    if (!whatsappRegex.test(newRealocacao.whatsapp)) {
+      return res.status(400).json({ message: "Whatsapp deve conter apenas números (10 a 13 dígitos)." });
+    }
+
+    // Validação de quantidade (deve ser válida)
+    if (isNaN(newRealocacao.quantidade) || newRealocacao.quantidade <= 0) {
       return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
     }
 
     const realocacaoCriada = await realocacoesService.createRealocacaoService(newRealocacao, ongId);
     res.status(201).json(realocacaoCriada);
   } catch (error) {
+    console.log('Erro ao criar realocação:', error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// Atualizar realocação
+/// Atualizar realocação
 const update = async (req, res) => {
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
     const { id } = req.params;
     const realocacaoEditada = req.body;
     const ongId = req.id_ong;
 
+    // Validação se ID é numérico
     if (isNaN(id) || parseInt(id) <= 0) {
       return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
 
-    if (!realocacaoEditada.titulo || !realocacaoEditada.descricao || !realocacaoEditada.tipo_item) {
-      return res.status(400).json({ message: 'Título, descrição e tipo de item são obrigatórios.' });
+    // Validação de corpo vazio
+    if (!realocacaoEditada || Object.keys(realocacaoEditada).length === 0) {
+      return res.status(400).json({ message: 'Corpo da requisição não pode estar vazio.' });
     }
-    if (
-      realocacaoEditada.titulo.trim() === '' ||
-      realocacaoEditada.descricao.trim() === '' ||
-      realocacaoEditada.tipo_item.trim() === ''
-    ) {
-      return res.status(400).json({ message: 'Título, descrição e tipo de item não podem estar vazios.' });
+
+    // Validação dos campos obrigatórios (exceto quantidade)
+    const obrigatorios = [
+      { campo: 'titulo', valor: realocacaoEditada.titulo },
+      { campo: 'descricao', valor: realocacaoEditada.descricao },
+      { campo: 'tipo_item', valor: realocacaoEditada.tipo_item },
+      { campo: 'url_imagem', valor: realocacaoEditada.url_imagem },
+      { campo: 'whatsapp', valor: realocacaoEditada.whatsapp },
+      { campo: 'email', valor: realocacaoEditada.email }
+    ];
+    for (const { campo, valor } of obrigatorios) {
+      if (valor === undefined || valor === null || (typeof valor === 'string' && valor.trim() === '')) {
+        return res.status(400).json({ message: `Campo obrigatório '${campo}' está ausente ou vazio.` });
+      }
     }
+
+    // Validação de tipo_item (categorias padronizadas)
+    const categoriasValidas = [
+      'Eletrodomésticos e Móveis',
+      'Utensílios Gerais',
+      'Roupas e Calçados',
+      'Saúde e Higiene',
+      'Materiais Educativos e Culturais',
+      'Itens de Inclusão e Mobilidade',
+      'Eletrônicos',
+      'Itens Pet',
+      'Outros'
+    ];
+    if (!categoriasValidas.includes(realocacaoEditada.tipo_item)) {
+      return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
+    }
+
+    // Validação de url_imagem (formato simples)
+    const urlRegex = /^(https?:\/\/)[\w\-]+(\.[\w\-]+)+[\/#?]?.*$/;
+    if (!urlRegex.test(realocacaoEditada.url_imagem)) {
+      return res.status(400).json({ message: "url_imagem deve ser uma URL válida." });
+    }
+
+    // Validação de email (formato)
+    const emailRegex = /^[\w-.]+@[\w-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(realocacaoEditada.email)) {
+      return res.status(400).json({ message: "Email deve ser válido." });
+    }
+
+    // Validação de whatsapp (formato simples, só números, 10-13 dígitos)
+    const whatsappRegex = /^\d{10,13}$/;
+    if (!whatsappRegex.test(realocacaoEditada.whatsapp)) {
+      return res.status(400).json({ message: "Whatsapp deve conter apenas números (10 a 13 dígitos)." });
+    }
+
+    // Validação de quantidade (se enviada)
+    if (realocacaoEditada.quantidade !== undefined && (isNaN(realocacaoEditada.quantidade) || realocacaoEditada.quantidade <= 0)) {
+      return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
+    }
+
     const realocacaoAtualizada = await realocacoesService.updateRealocacaoService(id, realocacaoEditada, ongId);
     res.status(200).json(realocacaoAtualizada);
   } catch (error) {

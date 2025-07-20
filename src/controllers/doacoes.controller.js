@@ -75,23 +75,6 @@ const create = async (req, res) => {
   try {
     const newDoacao = req.body;
     const ongId = req.id_ong;
-    // Validação de tipo_item (categorias padronizadas)
-    const categoriasValidas = [
-      'Eletrodomésticos e Móveis',
-      'Utensílios Gerais',
-      'Roupas e Calçados',
-      'Saúde e Higiene',
-      'Materiais Educativos e Culturais',
-      'Itens de Inclusão e Mobilidade',
-      'Eletrônicos',
-      'Itens Pet',
-      'Outros'
-    ];
-    if (!categoriasValidas.includes(newDoacao.tipo_item)) {
-      return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
-    }
-
-
     // Validação de todos os campos obrigatórios
     const obrigatorios = [
       { campo: 'titulo', valor: newDoacao.titulo },
@@ -110,6 +93,22 @@ const create = async (req, res) => {
       }
     }
 
+    // Validação de tipo_item (categorias padronizadas)
+    const categoriasValidas = [
+      'Eletrodomésticos e Móveis',
+      'Utensílios Gerais',
+      'Roupas e Calçados',
+      'Saúde e Higiene',
+      'Materiais Educativos e Culturais',
+      'Itens de Inclusão e Mobilidade',
+      'Eletrônicos',
+      'Itens Pet',
+      'Outros'
+    ];
+    if (!categoriasValidas.includes(newDoacao.tipo_item)) {
+      return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
+    }
+    
     // Validação de urgencia (enum)
     const urgenciasValidas = ['BAIXA', 'MEDIA', 'ALTA'];
     if (!urgenciasValidas.includes(newDoacao.urgencia)) {

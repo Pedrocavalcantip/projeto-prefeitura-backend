@@ -50,6 +50,8 @@ model produtos {
   finalidade          FinalidadeProduto     @default(DOACAO)
   ong_id              Int
   ong                 ongs                  @relation(fields: [ong_id], references: [id_ong])
+  whatsapp            String?               @db.VarChar(20)
+  email               String?               @db.VarChar(255)
   realocacoes_produto realocacoes_produto[]
 }
 
@@ -69,10 +71,3 @@ model realocacoes_produto {
   ong_origem    ongs     @relation(fields: [ong_origem_id], references: [id_ong])
 }
 
-model voluntarios {
-  id_voluntario   Int     @id @default(autoincrement())
-  nome            String  @db.VarChar(100)
-  email           String  @unique @db.VarChar(225)
-  whatsapp        String  @unique @db.VarChar(20)
-  receber_alertas Boolean @default(true)
-}

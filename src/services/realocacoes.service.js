@@ -82,7 +82,6 @@ exports.findByIdRealocacaoService = async (id) => {
 };
 
 // Listar realocações da ONG logada
-// src/services/realocacoes.service.js
 exports.findRealocacoesDaOngService = async (ongId) => {
   return await prisma.produtos.findMany({
     where: {
@@ -115,6 +114,8 @@ exports.createRealocacaoService = async (realocacaoData, ongId) => {
       tipo_item: realocacaoData.tipo_item,
       url_imagem: realocacaoData.url_imagem,
       quantidade: realocacaoData.quantidade || 1,
+      whatsapp: realocacaoData.whatsapp,
+      email: realocacaoData.email,
       status: 'ATIVA',
       finalidade: 'REALOCACAO',
       ong_id: ongId
@@ -134,6 +135,7 @@ exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
     throw new Error('ID deve ser um número válido maior que zero');
   }
 
+
   const realocacao = await prisma.produtos.findUnique({
     where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
   });
@@ -148,7 +150,9 @@ exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
       descricao: realocacaoData.descricao,
       tipo_item: realocacaoData.tipo_item,
       url_imagem: realocacaoData.url_imagem,
-      quantidade: realocacaoData.quantidade
+      quantidade: realocacaoData.quantidade,
+      whatsapp: realocacaoData.whatsapp,
+      email: realocacaoData.email
       // Sem urgencia e prazo_necessidade para realocações
     }
   });
