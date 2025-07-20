@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">61.53% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>8/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">61.53% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>8/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -111,12 +111,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -126,8 +126,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -147,8 +147,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const axios = require('axios');
 const prisma = require('../config/database');
 &nbsp;
@@ -159,7 +159,7 @@ exports.loginNaApiPrefeitura = async (email, password) =&gt; {
       email, 
       password 
     });
-<span class="cstat-no" title="statement not covered" >    return response.data;</span>
+    return response.data;
   } catch (error) {
     console.error('Erro na API da prefeitura:', error.message);
     throw new Error('Falha na autenticação com a API da prefeitura');
@@ -168,9 +168,9 @@ exports.loginNaApiPrefeitura = async (email, password) =&gt; {
 &nbsp;
 // Função para sincronizar dados da ONG por upsert
 // Se a ONG já existir, atualiza os dados; se não existir, cria uma nova
-exports.sincronizarOng = <span class="fstat-no" title="function not covered" >as</span>ync (ongData, userData) =&gt; {
-<span class="cstat-no" title="statement not covered" >  console.log('🔄 Sincronizando dados da ONG...');</span>
-  const ong = <span class="cstat-no" title="statement not covered" >await prisma.ongs.upsert({</span>
+exports.sincronizarOng = async (ongData, userData) =&gt; {
+  console.log('🔄 Sincronizando dados da ONG...');
+  const ong = await prisma.ongs.upsert({
     where: { email: userData.email },
     update: { 
       nome: ongData.name, 
@@ -190,8 +190,8 @@ exports.sincronizarOng = <span class="fstat-no" title="function not covered" >as
       logo_url: ongData.logo_photo_url,
     },
   });
-<span class="cstat-no" title="statement not covered" >  console.log('✅ ONG sincronizada com ID:', ong.id_ong);</span>
-<span class="cstat-no" title="statement not covered" >  return ong;</span>
+  console.log('✅ ONG sincronizada com ID:', ong.id_ong);
+  return ong;
 };</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -199,7 +199,7 @@ exports.sincronizarOng = <span class="fstat-no" title="function not covered" >as
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-19T13:47:39.056Z
+                at 2025-07-20T20:20:58.716Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

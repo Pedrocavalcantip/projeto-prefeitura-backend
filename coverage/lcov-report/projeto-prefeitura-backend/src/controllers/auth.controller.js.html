@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.89% </span>
+                <span class="strong">94.73% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/19</span>
+                <span class='fraction'>18/19</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.89% </span>
+                <span class="strong">94.73% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>11/19</span>
+                <span class='fraction'>18/19</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -114,33 +114,33 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13x</span>
-<span class="cline-any cline-yes">12x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -170,24 +170,24 @@ exports.login = async (req, res) =&gt; {
   try {
     // Usar o service para autenticar
     const apiResponse = await authService.loginNaApiPrefeitura(email, password);
-    const ongDataFromApi = <span class="cstat-no" title="statement not covered" >apiResponse.ong;</span>
-    const userDataFromApi = <span class="cstat-no" title="statement not covered" >apiResponse.user;</span>
+    const ongDataFromApi = apiResponse.ong;
+    const userDataFromApi = apiResponse.user;
     
-<span class="cstat-no" title="statement not covered" >    console.log('📊 Dados da ONG recebidos:', ongDataFromApi);</span>
-<span class="cstat-no" title="statement not covered" >    console.log('👤 Dados do usuário recebidos:', userDataFromApi);</span>
+    console.log('📊 Dados da ONG recebidos:', ongDataFromApi);
+    console.log('👤 Dados do usuário recebidos:', userDataFromApi);
     
     // Sincronizar com nosso banco
-    const ong = <span class="cstat-no" title="statement not covered" >await authService.sincronizarOng(ongDataFromApi, userDataFromApi);</span>
+    const ong = await authService.sincronizarOng(ongDataFromApi, userDataFromApi);
     
     // Gerar token JWT
-    const token = <span class="cstat-no" title="statement not covered" >jwt.sign(</span>
+    const token = jwt.sign(
       { id_ong: ong.id_ong, email: ong.email },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
     
     // Retornar apenas o necessário
-<span class="cstat-no" title="statement not covered" >    return res.json({ </span>
+    return res.json({ 
       auth: true, 
       token: token
     });
@@ -211,7 +211,7 @@ exports.login = async (req, res) =&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-19T13:47:39.056Z
+                at 2025-07-20T20:20:58.716Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
