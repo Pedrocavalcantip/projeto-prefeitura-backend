@@ -100,7 +100,7 @@ describe('Doacoes Service - Testes Unitários', () => {
   });
 
   it('updateStatusDoacaoService deve atualizar status se ONG for dona', async () => {
-    prisma.produtos.findUnique.mockResolvedValue({ ong_id: 1 });
+    prisma.produtos.findUnique.mockResolvedValue({ ong_id: 1, status: 'ATIVA' });
     prisma.produtos.update.mockResolvedValue({ status: 'FINALIZADA' });
 
     const result = await updateStatusDoacaoService(1, 'FINALIZADA', 1);

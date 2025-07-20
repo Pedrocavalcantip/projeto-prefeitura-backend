@@ -159,19 +159,69 @@ const update = async (req, res) => {
       return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
 
-    // Validação de dados inválidos
-    if (doacaoEditada.titulo !== undefined && doacaoEditada.titulo.trim() === '') {
-      return res.status(400).json({ message: 'Título não pode estar vazio.' });
+    // Validação de corpo vazio
+    if (!doacaoEditada || Object.keys(doacaoEditada).length === 0) {
+      return res.status(400).json({ message: 'Corpo da requisição não pode estar vazio.' });
     }
-    
-    if (doacaoEditada.descricao !== undefined && doacaoEditada.descricao.trim() === '') {
-      return res.status(400).json({ message: 'Descrição não pode estar vazia.' });
+
+    // Validação dos campos obrigatórios (exceto quantidade)
+    const obrigatorios = [
+      { campo: 'titulo', valor: doacaoEditada.titulo },
+      { campo: 'descricao', valor: doacaoEditada.descricao },
+      { campo: 'tipo_item', valor: doacaoEditada.tipo_item },
+      { campo: 'prazo_necessidade', valor: doacaoEditada.prazo_necessidade },
+      { campo: 'url_imagem', valor: doacaoEditada.url_imagem },
+      { campo: 'urgencia', valor: doacaoEditada.urgencia },
+      { campo: 'whatsapp', valor: doacaoEditada.whatsapp },
+      { campo: 'email', valor: doacaoEditada.email }
+    ];
+    for (const { campo, valor } of obrigatorios) {
+      if (valor === undefined || valor === null || (typeof valor === 'string' && valor.trim() === '')) {
+        return res.status(400).json({ message: `Campo obrigatório '${campo}' está ausente ou vazio.` });
+      }
     }
-    
-    if (doacaoEditada.tipo_item !== undefined && doacaoEditada.tipo_item.trim() === '') {
-      return res.status(400).json({ message: 'Tipo do item não pode estar vazio.' });
+
+    // Validação de tipo_item (categorias padronizadas)
+    const categoriasValidas = [
+      'Eletrodomésticos e Móveis',
+      'Utensílios Gerais',
+      'Roupas e Calçados',
+      'Saúde e Higiene',
+      'Materiais Educativos e Culturais',
+      'Itens de Inclusão e Mobilidade',
+      'Eletrônicos',
+      'Itens Pet',
+      'Outros'
+    ];
+    if (!categoriasValidas.includes(doacaoEditada.tipo_item)) {
+      return res.status(400).json({ message: "tipo_item deve ser uma das categorias válidas." });
     }
-    
+
+    // Validação de urgencia (enum)
+    const urgenciasValidas = ['BAIXA', 'MEDIA', 'ALTA'];
+    if (!urgenciasValidas.includes(doacaoEditada.urgencia)) {
+      return res.status(400).json({ message: "Urgência deve ser BAIXA, MEDIA ou ALTA." });
+    }
+
+    // Validação de url_imagem (formato simples)
+    const urlRegex = /^(https?:\/\/)[\w\-]+(\.[\w\-]+)+[\/#?]?.*$/;
+    if (!urlRegex.test(doacaoEditada.url_imagem)) {
+      return res.status(400).json({ message: "url_imagem deve ser uma URL válida." });
+    }
+
+    // Validação de email (formato)
+    const emailRegex = /^[\w-.]+@[\w-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(doacaoEditada.email)) {
+      return res.status(400).json({ message: "Email deve ser válido." });
+    }
+
+    // Validação de whatsapp (formato simples, só números, 10-13 dígitos)
+    const whatsappRegex = /^\d{10,13}$/;
+    if (!whatsappRegex.test(doacaoEditada.whatsapp)) {
+      return res.status(400).json({ message: "Whatsapp deve conter apenas números (10 a 13 dígitos)." });
+    }
+
+    // Validação de quantidade (se enviada)
     if (doacaoEditada.quantidade !== undefined && (isNaN(doacaoEditada.quantidade) || doacaoEditada.quantidade <= 0)) {
       return res.status(400).json({ message: 'Quantidade deve ser um número maior que zero.' });
     }
@@ -202,12 +252,37 @@ const updateStatus = async (req, res) => {
     }
 
     // Validação básica do status
-    if (!status || !['ATIVA', 'FINALIZADA'].includes(status)) {
+    const statusPermitidos = ['ATIVA', 'FINALIZADA'];
+    if (!status || !statusPermitidos.includes(status)) {
       return res.status(400).json({ message: 'Status inválido. Use ATIVA ou FINALIZADA.' });
     }
 
-    const doacaoAtualizada = await doacoesService.updateStatusDoacaoService(id, status, ongId);
-    res.status(200).json(doacaoAtualizada);
+    // Buscar doação atual para validação de regras de negócio
+    const doacaoAtual = await doacoesService.findByIdDoacaoService(id);
+    if (!doacaoAtual) {
+      return res.status(404).json({ message: 'Doação não encontrada.' });
+    }
+
+    // Bloquear alteração para o mesmo status
+    if (doacaoAtual.status === status) {
+      return res.status(400).json({ message: `A doação já está com o status '${status}'.` });
+    }
+
+    // Bloquear alteração se já estiver FINALIZADA
+    if (doacaoAtual.status === 'FINALIZADA') {
+      return res.status(400).json({ message: 'Doação FINALIZADA não pode ser modificada.' });
+    }
+
+    try {
+      const doacaoAtualizada = await doacoesService.updateStatusDoacaoService(id, status, ongId);
+      res.status(200).json(doacaoAtualizada);
+    } catch (serviceError) {
+      // Se o erro for da regra de negócio do status ATIVA, retorna 400
+      if (serviceError.message.includes('Só é possível atualizar o status se a doação estiver ATIVA')) {
+        return res.status(400).json({ message: serviceError.message });
+      }
+      throw serviceError;
+    }
   } catch (error) {
     if (error.message.includes('não encontrada')) {
       return res.status(404).json({ message: error.message });

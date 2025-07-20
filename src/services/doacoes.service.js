@@ -176,6 +176,17 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
   if (doacao.ong_id !== ongId) {
     throw new Error('Você não tem permissão para modificar esta doação');
   }
+
+  // Converter data para ISO DateTime se fornecida (igual ao createDoacaoService)
+  let prazoNecessidade = null;
+  if (doacaoData.prazo_necessidade) {
+    const dataString = doacaoData.prazo_necessidade;
+    if (dataString.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)) {
+      prazoNecessidade = new Date(dataString + 'T23:59:59.000Z').toISOString();
+    } else {
+      prazoNecessidade = new Date(dataString).toISOString();
+    }
+  }
   
   return await prisma.produtos.update({
     where: { id_produto: idNumerico },
@@ -183,7 +194,7 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
       titulo: doacaoData.titulo,
       descricao: doacaoData.descricao,
       tipo_item: doacaoData.tipo_item,
-      prazo_necessidade: doacaoData.prazo_necessidade,
+      prazo_necessidade: prazoNecessidade,
       url_imagem: doacaoData.url_imagem,
       urgencia: doacaoData.urgencia,
       quantidade: doacaoData.quantidade
@@ -219,6 +230,10 @@ exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
   
   if (doacao.ong_id !== ongId) {
     throw new Error('Você não tem permissão para modificar esta doação');
+  }
+  // Só permite atualizar se status atual for ATIVA
+  if (doacao.status !== 'ATIVA') {
+    throw new Error('Só é possível atualizar o status se a doação estiver ATIVA');
   }
   
   return await prisma.produtos.update({
