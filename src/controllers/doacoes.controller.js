@@ -163,6 +163,16 @@ const update = async (req, res) => {
       return res.status(400).json({ message: 'Corpo da requisição não pode estar vazio.' });
     }
 
+    // Buscar doação atual para verificar status
+    const doacaoAtual = await doacoesService.findByIdDoacaoService(id);
+    if (!doacaoAtual) {
+      return res.status(404).json({ message: 'Doação não encontrada.' });
+    }
+    // Bloquear edição se já estiver FINALIZADA
+    if (doacaoAtual.status === 'FINALIZADA') {
+      return res.status(400).json({ message: 'Doação FINALIZADA não pode ser modificada.' });
+    }
+
     // Validação dos campos obrigatórios (exceto quantidade)
     const obrigatorios = [
       { campo: 'titulo', valor: doacaoEditada.titulo },

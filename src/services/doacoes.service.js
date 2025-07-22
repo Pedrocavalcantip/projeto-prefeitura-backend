@@ -93,11 +93,11 @@ exports.findByIdDoacaoService = async (id) => {
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
+      whatsapp: true,
+      email: true,
       ong: {
         select: {
           nome: true,
-          whatsapp: true,
-          email: true,
           logo_url: true,
           site: true
         }
@@ -137,6 +137,8 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       quantidade: doacaoData.quantidade || 1,
       status: 'ATIVA',
       finalidade: 'DOACAO',
+      email: doacaoData.email,
+      whatsapp: doacaoData.whatsapp,
       ong_id: ongId
     }
   });
@@ -187,7 +189,9 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
       prazo_necessidade: prazoNecessidade,
       url_imagem: doacaoData.url_imagem,
       urgencia: doacaoData.urgencia,
-      quantidade: doacaoData.quantidade
+      quantidade: doacaoData.quantidade,
+      email: doacaoData.email,
+      whatsapp: doacaoData.whatsapp
     }
   });
 };
