@@ -2,7 +2,7 @@ const prisma = require('../config/database');
 
 // Listar todas as doações públicas (apenas doações ativas)
 exports.findAllDoacoesService = async (filtros = {}) => {
-  const { titulo, tipo_item, ordenarPorUrgencia } = filtros;
+  const { titulo, tipo_item } = filtros;
 
   return await prisma.produtos.findMany({
     where: {
@@ -35,19 +35,9 @@ exports.findAllDoacoesService = async (filtros = {}) => {
       ong: {
         select: {
           nome: true,
-          whatsapp: true,
-          logo_url: true
         }
       }
     },
-    orderBy: ordenarPorUrgencia
-      ? {
-          // Prisma usa enum: ALTA, MEDIA, BAIXA → ordenação correta exige enum customizado ou mapeamento no front
-          urgencia: ordenarPorUrgencia === 'asc' ? 'asc' : 'desc'
-        }
-      : {
-          criado_em: 'desc'
-        }
   });
 };
 
