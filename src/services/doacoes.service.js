@@ -22,13 +22,13 @@ exports.findAllDoacoesService = async (filtros = {}) => {
       })
     },
     select: {
-      id_produto: true,
+      id_produto: true, // o mais importante
       titulo: true,
       descricao: true,
       tipo_item: true,
       urgencia: true,
       quantidade: true,
-      status: true,             // ← Adicionado para o teste verificar
+      status: true,   //apenas para o teste          
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
@@ -55,9 +55,9 @@ exports.findDoacoesDaOngService = async (ongId) => {
       descricao: true,
       tipo_item: true,
       urgencia: true,
-      quantidade: true,      // ← Só a ONG dona vê
-      status: true,          // ← Só a ONG dona vê
-      ong_id: true,          // ← Adicionado para o teste verificar
+      quantidade: true,
+      status: true,
+      ong_id: true,
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true
@@ -83,7 +83,8 @@ exports.findByIdDoacaoService = async (id) => {
       finalidade: 'DOACAO' // Garantir que é uma doação
     },
     select: {
-      id_produto: true,
+      id_produto: true, //importante para o filtro frontend
+      status: true,     //apenas para o teste
       titulo: true,
       descricao: true,
       tipo_item: true,
@@ -96,9 +97,8 @@ exports.findByIdDoacaoService = async (id) => {
         select: {
           nome: true,
           whatsapp: true,
+          email: true,
           logo_url: true,
-          instagram: true,
-          facebook: true,
           site: true
         }
       }
