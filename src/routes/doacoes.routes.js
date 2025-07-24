@@ -7,8 +7,11 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // ROTAS PÚBLICAS/PRIVADAS
 // ========================================
 
-// GET /doacoes - Marketplace público OU doações da ONG (com ?minha=true)
+// GET /doacoes - Marketplace público 
 router.get('/', doacoesController.findAll);
+
+// GET /doacoes/prestes-a-vencer - Doações que estão prestes a vencer
+router.get('/doacoes/prestes-a-vencer', doacoesController.findPrestesAVencer);
 
 // GET /doacoes/:id - Buscar doação específica
 router.get('/:id', doacoesController.findById);
@@ -16,6 +19,8 @@ router.get('/:id', doacoesController.findById);
 // ========================================
 // ROTAS PROTEGIDAS
 // ========================================
+// GET /doacoes/minhas - Buscar doações da ONG logada
+router.get('/doacoes/minha', authMiddleware, doacoesController.findMinhas);
 
 // POST /doacoes - Criar nova doação
 router.post('/', authMiddleware, doacoesController.create);

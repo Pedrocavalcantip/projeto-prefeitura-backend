@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 
 // Listar todas as doações públicas (apenas doações ativas)
+
 exports.findAllDoacoesService = async (filtros = {}) => {
   const { titulo, tipo_item } = filtros;
 
@@ -22,32 +23,42 @@ exports.findAllDoacoesService = async (filtros = {}) => {
       })
     },
     select: {
-      id_produto: true, // o mais importante
+      id_produto: true,
       titulo: true,
       descricao: true,
       tipo_item: true,
       urgencia: true,
       quantidade: true,
-      status: true,   //apenas para o teste          
+      status: true,
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
       ong: {
         select: {
           nome: true,
+          logo_url: true,
+          site: true
         }
       }
     },
+    orderBy: [
+      { urgencia: 'desc' },            
+      { prazo_necessidade: 'asc' }     
+    ]
   });
 };
 
 
-// Nova função: Listar doações da ONG logada (com dados completos)
-exports.findDoacoesDaOngService = async (ongId) => {
+
+
+exports.findDoacoesPrestesAVencerService = async () => {
   return await prisma.produtos.findMany({
     where: {
-      ong_id: ongId,
-      finalidade: 'DOACAO'
+      status: 'ATIVA',
+      finalidade: 'DOACAO',
+      prazo_necessidade: {
+        lte: new Date(new Date().setDate(new Date().getDate() + 14)) // Vence em até 14 dias
+      }
     },
     select: {
       id_produto: true,
@@ -57,16 +68,59 @@ exports.findDoacoesDaOngService = async (ongId) => {
       urgencia: true,
       quantidade: true,
       status: true,
-      ong_id: true,
       url_imagem: true,
       prazo_necessidade: true,
-      criado_em: true
+      criado_em: true,
+      whatsapp: true,
+      email: true,
+      ong: {
+        select: {
+          nome: true,
+          logo_url: true
+        }
+      }
+    },
+    orderBy: {
+      prazo_necessidade: 'asc' // Os que vencem primeiro aparecem primeiro
+    }
+  });
+};
+
+
+
+exports.findMinhasDoacoesService = async (ongId, status) => {
+  return await prisma.produtos.findMany({
+    where: {
+      ong_id: ongId,
+      finalidade: 'DOACAO',
+      ...(status && { status }),
+    },
+    select: {
+      id_produto: true, // o mais importante
+      titulo: true,
+      descricao: true,
+      tipo_item: true,
+      urgencia: true,
+      quantidade: true,
+      status: true,            
+      url_imagem: true,
+      prazo_necessidade: true,
+      criado_em: true,
+      ong: {
+        select: {
+          nome: true,
+          logo_url: true,
+          site: true
+        }
+      }
     },
     orderBy: {
       criado_em: 'desc'
     }
   });
 };
+
+
 
 // Buscar doação específica (visualização pública)
 exports.findByIdDoacaoService = async (id) => {

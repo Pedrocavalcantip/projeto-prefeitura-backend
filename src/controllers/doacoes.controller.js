@@ -4,7 +4,7 @@ const { validateToken } = require('../utils/tokenUtils');
 // Listar todas as doações OU doações da ONG (com query ?minha=true)
 const findAll = async (req, res) => {
   try {
-    const { minha, tipo_item } = req.query;
+    const { tipo_item, titulo } = req.query;
 
     // Validação de tipo_item (categorias padronizadas) no filtro público
     if (tipo_item !== undefined) {
@@ -24,31 +24,48 @@ const findAll = async (req, res) => {
       }
     }
 
-    // Se tem query 'minha=true' e token de autorização
-    if (minha === 'true') {
-      const tokenValidation = validateToken(req.headers.authorization);
+    const filtros = { titulo, tipo_item };
 
-      if (!tokenValidation.valid) {
-        return res.status(401).json({ message: tokenValidation.error });
-      }
-
-      const ongId = tokenValidation.decoded.id_ong;
-      const doacoes = await doacoesService.findDoacoesDaOngService(ongId);
-      return res.status(200).json(doacoes);
-    }
-    // Se não tem query 'minha=true':
-    const filtros = {
-      titulo: req.query.titulo,
-      tipo_item: req.query.tipo_item
-    };
-
-    // Caso padrão: marketplace público, com filtros opcionais
+    // Marketplace público, com filtros opcionais
     const doacoes = await doacoesService.findAllDoacoesService(filtros);
     res.status(200).json(doacoes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+const findPrestesAVencer = async (req, res) => {
+  try {
+    const doacoes = await doacoesService.findDoacoesPrestesAVencerService();
+    res.status(200).json(doacoes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+const findMinhas = async (req, res) => {
+  try {
+    const tokenValidation = validateToken(req.headers.authorization);
+    if (!tokenValidation.valid) {
+      return res.status(401).json({ message: tokenValidation.error });
+    }
+
+    const ongId = tokenValidation.decoded.id_ong;
+    const filtros = {
+      status: req.query.status,
+      titulo: req.query.titulo,
+      tipo_item: req.query.tipo_item,
+      ordenarPorUrgencia: req.query.ordenarPorUrgencia,
+    };
+
+    const doacoes = await doacoesService.findMinhasDoacoesService(ongId, filtros);
+    res.status(200).json(doacoes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // Buscar doação por ID
 const findById = async (req, res) => {
@@ -328,6 +345,8 @@ const deleteDoacao = async (req, res) => {
 };
 
 module.exports = {
+  findPrestesAVencer,
+  findMinhas,
   findAll,
   findById,
   create,
