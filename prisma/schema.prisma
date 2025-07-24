@@ -30,8 +30,8 @@ model ongs {
   whatsapp  String?    @db.VarChar(20)
   instagram String?    @db.VarChar(50)
   facebook  String?    @db.VarChar(50)
-  site      String?
-  logo_url  String?
+  site      String?    @db.VarChar(100)
+  logo_url  String?    @db.VarChar(255)
   produtos  produtos[]
   realocacoes_iniciadas realocacoes_produto[]
 }

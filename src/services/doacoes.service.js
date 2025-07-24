@@ -2,7 +2,7 @@ const prisma = require('../config/database');
 
 // Listar todas as doações públicas (apenas doações ativas)
 exports.findAllDoacoesService = async (filtros = {}) => {
-  const { titulo, tipo_item, ordenarPorUrgencia } = filtros;
+  const { titulo, tipo_item } = filtros;
 
   return await prisma.produtos.findMany({
     where: {
@@ -22,32 +22,22 @@ exports.findAllDoacoesService = async (filtros = {}) => {
       })
     },
     select: {
-      id_produto: true,
+      id_produto: true, // o mais importante
       titulo: true,
       descricao: true,
       tipo_item: true,
       urgencia: true,
       quantidade: true,
-      status: true,             // ← Adicionado para o teste verificar
+      status: true,   //apenas para o teste          
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
       ong: {
         select: {
           nome: true,
-          whatsapp: true,
-          logo_url: true
         }
       }
     },
-    orderBy: ordenarPorUrgencia
-      ? {
-          // Prisma usa enum: ALTA, MEDIA, BAIXA → ordenação correta exige enum customizado ou mapeamento no front
-          urgencia: ordenarPorUrgencia === 'asc' ? 'asc' : 'desc'
-        }
-      : {
-          criado_em: 'desc'
-        }
   });
 };
 
@@ -65,9 +55,9 @@ exports.findDoacoesDaOngService = async (ongId) => {
       descricao: true,
       tipo_item: true,
       urgencia: true,
-      quantidade: true,      // ← Só a ONG dona vê
-      status: true,          // ← Só a ONG dona vê
-      ong_id: true,          // ← Adicionado para o teste verificar
+      quantidade: true,
+      status: true,
+      ong_id: true,
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true
@@ -93,7 +83,8 @@ exports.findByIdDoacaoService = async (id) => {
       finalidade: 'DOACAO' // Garantir que é uma doação
     },
     select: {
-      id_produto: true,
+      id_produto: true, //importante para o filtro frontend
+      status: true,     //apenas para o teste
       titulo: true,
       descricao: true,
       tipo_item: true,
@@ -102,13 +93,12 @@ exports.findByIdDoacaoService = async (id) => {
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
+      whatsapp: true,
+      email: true,
       ong: {
         select: {
           nome: true,
-          whatsapp: true,
           logo_url: true,
-          instagram: true,
-          facebook: true,
           site: true
         }
       }
@@ -147,6 +137,8 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       quantidade: doacaoData.quantidade || 1,
       status: 'ATIVA',
       finalidade: 'DOACAO',
+      email: doacaoData.email,
+      whatsapp: doacaoData.whatsapp,
       ong_id: ongId
     }
   });
@@ -197,7 +189,9 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
       prazo_necessidade: prazoNecessidade,
       url_imagem: doacaoData.url_imagem,
       urgencia: doacaoData.urgencia,
-      quantidade: doacaoData.quantidade
+      quantidade: doacaoData.quantidade,
+      email: doacaoData.email,
+      whatsapp: doacaoData.whatsapp
     }
   });
 };
