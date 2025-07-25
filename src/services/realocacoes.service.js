@@ -85,24 +85,51 @@ exports.findCatalogoByIdService = async (id) => {
   };
 };
 
-// Listar realocações da ONG logada (Get /relocacoes/minhas-realocacoes)
-exports.findRelocacoesDaOngService = async (ongId) => {
+// Realocações ATIVAS da ONG
+exports.findMinhasRealocacoesAtivasService = async (ongId) => {
   return await prisma.produtos.findMany({
     where: {
-      ong_id: ongId,
-      finalidade: 'REALOCACAO'
+      ong_id:    ongId,
+      finalidade:'REALOCACAO',
+      status:    'ATIVA'
     },
     select: {
       id_produto: true,
-      titulo: true,
-      descricao: true,
-      status: true,
+      titulo:     true,
+      descricao:  true,
+      tipo_item:  true,
+      quantidade: true,
+      status:     true,
       url_imagem: true,
-      criado_em: true,
-      ong_id: true 
+      criado_em:  true
     },
     orderBy: {
       criado_em: 'desc'
+    }
+  });
+};
+
+// Realocações FINALIZADAS da ONG
+exports.findMinhasRealocacoesFinalizadasService = async (ongId) => {
+  return await prisma.produtos.findMany({
+    where: {
+      ong_id:    ongId,
+      finalidade:'REALOCACAO',
+      status:    'FINALIZADA'
+    },
+    select: {
+      id_produto:    true,
+      titulo:        true,
+      descricao:     true,
+      tipo_item:     true,
+      quantidade:    true,
+      status:        true,
+      url_imagem:    true,
+      criado_em:     true,
+      finalizado_em: true    // precisa estar no schema
+    },
+    orderBy: {
+      finalizado_em: 'desc'
     }
   });
 };

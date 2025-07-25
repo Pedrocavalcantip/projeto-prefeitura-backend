@@ -88,34 +88,68 @@ exports.findDoacoesPrestesAVencerService = async () => {
 
 
 
-exports.findMinhasDoacoesService = async (ongId, status) => {
+// Seleciona doações ATIVAS da ONG
+exports.findMinhasDoacoesAtivasService = async (ongId) => {
   return await prisma.produtos.findMany({
     where: {
-      ong_id: ongId,
-      finalidade: 'DOACAO',
-      ...(status && { status }),
+      ong_id:    ongId,
+      finalidade:'DOACAO',
+      status:    'ATIVA'
     },
     select: {
-      id_produto: true, // o mais importante
-      titulo: true,
-      descricao: true,
-      tipo_item: true,
-      urgencia: true,
-      quantidade: true,
-      status: true,            
-      url_imagem: true,
-      prazo_necessidade: true,
-      criado_em: true,
+      id_produto:       true,
+      titulo:           true,
+      descricao:        true,
+      tipo_item:        true,
+      urgencia:         true,
+      quantidade:       true,
+      status:           true,
+      url_imagem:       true,
+      prazo_necessidade:true,
+      criado_em:        true,
       ong: {
         select: {
-          nome: true,
+          nome:     true,
           logo_url: true,
-          site: true
+          site:     true
         }
       }
     },
     orderBy: {
       criado_em: 'desc'
+    }
+  });
+};
+
+// Seleciona doações FINALIZADAS da ONG
+exports.findMinhasDoacoesFinalizadasService = async (ongId) => {
+  return await prisma.produtos.findMany({
+    where: {
+      ong_id:    ongId,
+      finalidade:'DOACAO',
+      status:    'FINALIZADA'
+    },
+    select: {
+      id_produto:       true,
+      titulo:           true,
+      descricao:        true,
+      tipo_item:        true,
+      urgencia:         true,
+      quantidade:       true,
+      status:           true,
+      url_imagem:       true,
+      criado_em:        true,
+      finalizado_em:    true,      
+      ong: {
+        select: {
+          nome:     true,
+          logo_url: true,
+          site:     true
+        }
+      }
+    },
+    orderBy: {
+      finalizado_em: 'desc'
     }
   });
 };

@@ -43,20 +43,35 @@ exports.findPrestesAVencer = async (req, res) => {
 };
 
 // Listar as doações da ONG logada (filtro por status)
-exports.findMinhas = async (req, res) => {
+// GET /doacoes/minhas/ativas
+exports.findMinhasAtivas = async (req, res) => {
   try {
     const tokenInfo = validateToken(req.headers.authorization);
     if (!tokenInfo.valid) {
       return res.status(401).json({ message: tokenInfo.error });
     }
     const ongId = tokenInfo.decoded.id_ong;
-    const status = req.query.status;
-
-    const doacoes = await doacoesService.findMinhasDoacoesService(ongId, status);
-    return res.status(200).json(doacoes);
+    const lista = await doacoesService.findMinhasDoacoesAtivasService(ongId);
+    return res.status(200).json(lista);
   } catch (error) {
-    console.error('findMinhas:', error);
-    return res.status(500).json({ message: 'Erro interno ao listar minhas doações.' });
+    console.error('findMinhasAtivas:', error);
+    return res.status(500).json({ message: 'Erro interno ao listar doações ativas.' });
+  }
+};
+
+// GET /doacoes/minhas/finalizadas
+exports.findMinhasFinalizadas = async (req, res) => {
+  try {
+    const tokenInfo = validateToken(req.headers.authorization);
+    if (!tokenInfo.valid) {
+      return res.status(401).json({ message: tokenInfo.error });
+    }
+    const ongId = tokenInfo.decoded.id_ong;
+    const lista = await doacoesService.findMinhasDoacoesFinalizadasService(ongId);
+    return res.status(200).json(lista);
+  } catch (error) {
+    console.error('findMinhasFinalizadas:', error);
+    return res.status(500).json({ message: 'Erro interno ao listar doações finalizadas.' });
   }
 };
 

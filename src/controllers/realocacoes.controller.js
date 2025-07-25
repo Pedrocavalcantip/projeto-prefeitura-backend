@@ -45,18 +45,27 @@ const findCatalogoById = async (req, res) => {
   }
 };
 
-// lista as relocacoes da ong logada (GET /relocacoes/minhas-realocacoes)
-const findMinhasRealocacoes = async (req, res) => {
+// GET /realocacoes/minhas/ativas
+const findMinhasAtivas = async (req, res) => {
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
     const ongId = req.id_ong;
+    const lista = await realocacoesService.findMinhasRealocacoesAtivasService(ongId);
+    return res.status(200).json(lista);
+  } catch (err) {
+    console.error('findMinhasAtivas:', err);
+    return res.status(500).json({ message: 'Erro interno ao listar realocações ativas.' });
+  }
+};
 
-    const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
-    res.status(200).json(realocacoes);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+// GET /realocacoes/minhas/finalizadas
+const findMinhasFinalizadas = async (req, res) => {
+  try {
+    const ongId = req.id_ong;
+    const lista = await realocacoesService.findMinhasRealocacoesFinalizadasService(ongId);
+    return res.status(200).json(lista);
+  } catch (err) {
+    console.error('findMinhasFinalizadas:', err);
+    return res.status(500).json({ message: 'Erro interno ao listar realocações finalizadas.' });
   }
 };
 
@@ -178,7 +187,8 @@ const deleteRealocacao = async (req, res) => {
 module.exports = {
   findCatalogo,
   findCatalogoById,
-  findMinhasRealocacoes,
+  findMinhasAtivas,
+  findMinhasFinalizadas,
   create,
   update,
   updateStatus,

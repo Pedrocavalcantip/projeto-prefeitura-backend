@@ -8,7 +8,9 @@ const upload            = require('../middlewares/upload.middleware');
 // get das relocacoes
 router.get('/catalogo', authMiddleware, realocacoesController.findCatalogo);
 router.get('/catalogo/:id', authMiddleware, realocacoesController.findCatalogoById);
-router.get('/minhas-relocacoes', authMiddleware, realocacoesController.findMinhasRealocacoes);
+router.get('/minhas/ativas',      authMiddleware, realocacoesController.findMinhasAtivas);
+router.get('/minhas/finalizadas', authMiddleware, realocacoesController.findMinhasFinalizadas);
+
 
 // POST /realocacoes - Criar nova realocação
 router.post('/', authMiddleware, realocacoesController.create);
