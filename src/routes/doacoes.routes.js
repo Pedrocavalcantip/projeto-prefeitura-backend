@@ -1,32 +1,66 @@
-const express = require('express');
-const router = express.Router();
+const express           = require('express');
+const router            = express.Router();
 const doacoesController = require('../controllers/doacoes.controller');
-const authMiddleware = require('../middlewares/authMiddleware');
+const authMiddleware    = require('../middlewares/authMiddleware');
+const upload            = require('../middlewares/upload.middleware');
 
 // ========================================
-// ROTAS PÚBLICAS/PRIVADAS
+// ROTAS PÚBLICAS
 // ========================================
 
-// GET /doacoes - Marketplace público OU doações da ONG (com ?minha=true)
+// GET /doacoes - Marketplace público 
 router.get('/', doacoesController.findAll);
+
+// GET /doacoes/prestes-a-vencer - Doações que estão prestes a vencer
+router.get('/prestes-a-vencer', doacoesController.findPrestesAVencer);
 
 // GET /doacoes/:id - Buscar doação específica
 router.get('/:id', doacoesController.findById);
 
 // ========================================
-// ROTAS PROTEGIDAS
+// ROTAS PROTEGIDAS (precisam de token)
 // ========================================
 
-// POST /doacoes - Criar nova doação
-router.post('/', authMiddleware, doacoesController.create);
+// GET  /doacoes/minha             - Buscar doações da ONG logada
+router.get('/minha', authMiddleware, doacoesController.findMinhas);
 
-// PUT /doacoes/:id - Atualizar doação
-router.put('/:id', authMiddleware, doacoesController.update);
+// POST /doacoes                   - Criar nova doação (upload de foto)
+router.post(
+  '/', 
+  authMiddleware,
+  upload.single('foto'),        // <<— middleware de upload aqui
+  doacoesController.create
+);
 
-// PATCH /doacoes/:id/status - Atualizar status da doação
+// PUT  /doacoes/:id               - Atualizar doação (pode enviar nova foto)
+router.put(
+  '/:id', 
+  authMiddleware,
+  upload.single('foto'),        // <<— se houver foto nova, processa o upload
+  doacoesController.update
+);
+
+// PATCH /doacoes/:id/status       - Atualizar status da doação
 router.patch('/:id/status', authMiddleware, doacoesController.updateStatus);
 
-// DELETE /doacoes/:id - Deletar doação
+// DELETE /doacoes/:id             - Deletar doação
 router.delete('/:id', authMiddleware, doacoesController.deleteDoacao);
+
+
+// cleanup
+
+// Rota para limpeza em lote (bulk)
+router.delete(
+  '/doacoes/expiradas',
+  validateToken,
+  doacoesController.limparExpiradas
+);
+
+// Rota para finalizar expiradas individualmente
+router.patch(
+  '/doacoes/expiradas',
+  validateToken,
+  doacoesController.finalizarExpiradas
+);
 
 module.exports = router;
