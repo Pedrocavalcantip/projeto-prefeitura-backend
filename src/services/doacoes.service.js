@@ -171,7 +171,6 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
   // Converter data para ISO DateTime se fornecida
   let prazoNecessidade = null;
   if (doacaoData.prazo_necessidade) {
-    // Se a data está em formato YYYY-MM-DD, converter para DateTime
     const dataString = doacaoData.prazo_necessidade;
     if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       prazoNecessidade = new Date(dataString + 'T23:59:59.000Z').toISOString();
@@ -179,73 +178,76 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       prazoNecessidade = new Date(dataString).toISOString();
     }
   }
-  
+
+  // Converte quantidade para número (default 1)
+  const quantidade = doacaoData.quantidade
+    ? parseInt(doacaoData.quantidade, 10)
+    : 1;
+
   return await prisma.produtos.create({
     data: {
-      titulo: doacaoData.titulo,
-      descricao: doacaoData.descricao,
-      tipo_item: doacaoData.tipo_item,
+      titulo:            doacaoData.titulo,
+      descricao:         doacaoData.descricao,
+      tipo_item:         doacaoData.tipo_item,
       prazo_necessidade: prazoNecessidade,
-      url_imagem: doacaoData.url_imagem,
-      urgencia: doacaoData.urgencia || 'MEDIA',
-      quantidade: doacaoData.quantidade || 1,
-      status: 'ATIVA',
-      finalidade: 'DOACAO',
-      email: doacaoData.email,
-      whatsapp: doacaoData.whatsapp,
-      ong_id: ongId
+      url_imagem:        doacaoData.url_imagem,
+      urgencia:          doacaoData.urgencia  || 'MEDIA',
+      quantidade,   // <— usa o número convertido
+      status:            'ATIVA',
+      finalidade:        'DOACAO',
+      email:             doacaoData.email,
+      whatsapp:          doacaoData.whatsapp,
+      ong_id:            ongId
     }
   });
 };
 
 // Atualizar doação com verificação de propriedade
 exports.updateDoacaoService = async (id, doacaoData, ongId) => {
-  const idNumerico = parseInt(id);
-  
-  // Validação do ID
+  const idNumerico = parseInt(id, 10);
   if (isNaN(idNumerico) || idNumerico <= 0) {
     throw new Error('ID deve ser um número válido maior que zero');
   }
 
-  // Verificar se a doação existe e se pertence à ONG
+  // Verifica existência e propriedade
   const doacao = await prisma.produtos.findUnique({
-    where: { 
-      id_produto: idNumerico,
-      finalidade: 'DOACAO' // Garantir que é uma doação
-    }
+    where: { id_produto: idNumerico }
   });
-  
   if (!doacao) {
     throw new Error('Doação não encontrada');
   }
-  
   if (doacao.ong_id !== ongId) {
     throw new Error('Você não tem permissão para modificar esta doação');
   }
 
-  // Converter data para ISO DateTime se fornecida (igual ao createDoacaoService)
+  // Converter data para ISO DateTime se fornecida
   let prazoNecessidade = null;
   if (doacaoData.prazo_necessidade) {
     const dataString = doacaoData.prazo_necessidade;
-    if (dataString.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)) {
+    if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       prazoNecessidade = new Date(dataString + 'T23:59:59.000Z').toISOString();
     } else {
       prazoNecessidade = new Date(dataString).toISOString();
     }
   }
-  
+
+  // Converte quantidade se vier definida
+  const quantidade = doacaoData.quantidade !== undefined
+    ? parseInt(doacaoData.quantidade, 10)
+    : undefined;
+
   return await prisma.produtos.update({
     where: { id_produto: idNumerico },
     data: {
-      titulo: doacaoData.titulo,
-      descricao: doacaoData.descricao,
-      tipo_item: doacaoData.tipo_item,
+      titulo:            doacaoData.titulo,
+      descricao:         doacaoData.descricao,
+      tipo_item:         doacaoData.tipo_item,
       prazo_necessidade: prazoNecessidade,
-      url_imagem: doacaoData.url_imagem,
-      urgencia: doacaoData.urgencia,
-      quantidade: doacaoData.quantidade,
-      email: doacaoData.email,
-      whatsapp: doacaoData.whatsapp
+      url_imagem:        doacaoData.url_imagem,
+      urgencia:          doacaoData.urgencia,
+      ...(quantidade !== undefined && { quantidade }),  // só inclui se foi convertido
+      email:             doacaoData.email,
+      whatsapp:          doacaoData.whatsapp
     }
   });
 };
@@ -318,4 +320,56 @@ exports.deleteDoacaoService = async (id, ongId) => {
   return await prisma.produtos.delete({
     where: { id_produto: idNumerico }
   });
+};
+
+
+//clean up
+// Finalizar doações vencidas
+exports.finalizarDoacoesVencidas = async () => {
+  const expiradas = await prisma.produtos.findMany({
+    where: {
+      status: 'ATIVA',
+      finalidade: 'DOACAO',
+      prazo_necessidade: { lt: new Date() }
+    }
+  });
+
+  const ids = [];
+  for (const doacao of expiradas) {
+    // Aqui usamos o ong_id da própria doação para cumprir a checagem de permissão
+    await updateStatusDoacaoService(doacao.id_produto, 'FINALIZADA', doacao.ong_id);
+    ids.push(doacao.id_produto);
+  }
+  return ids;
+};
+
+
+// Limpar doações expiradas (finalizar e excluir)
+exports.limparDoacoesExpiradas = async () => {
+  const agora = new Date();
+  const seisMesesAtras = new Date();
+  seisMesesAtras.setMonth(agora.getMonth() - 6);
+
+  // 1) Finaliza em massa as doações cujo prazo já passou
+  const resultadoFinalizar = await prisma.produtos.updateMany({
+    where: {
+      status: 'ATIVA',
+      finalidade: 'DOACAO',
+      prazo_necessidade: { lt: agora }
+    },
+    data: { status: 'FINALIZADA' }
+  });
+
+  // 2) Exclui em massa as doações criadas há mais de 6 meses
+  const resultadoExcluir = await prisma.produtos.deleteMany({
+    where: {
+      finalidade: 'DOACAO',
+      criado_em: { lt: seisMesesAtras }
+    }
+  });
+
+  return {
+    totalFinalizadas: resultadoFinalizar.count,
+    totalExcluidas: resultadoExcluir.count
+  };
 };
