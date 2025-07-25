@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-
+const { validarRealocacao } = require('./validacao.service');
 // Listar todas as realocações disponíveis (Get /realocacoes/catalogo)
 exports.findCatalogoService = async (filtros = {}) => {
   const { titulo, tipo_item } = filtros;
@@ -109,13 +109,19 @@ exports.findRelocacoesDaOngService = async (ongId) => {
 
 // Criar realocação
 exports.createRealocacaoService = async (realocacaoData, ongId) => {
+  validarRealocacao(realocacaoData);
+  // Converte quantidade para número (default 1)
+  const quantidade = realocacaoData.quantidade
+    ? parseInt(realocacaoData.quantidade, 10)
+    : 1;
+
   const nova = await prisma.produtos.create({
     data: {
       titulo: realocacaoData.titulo,
       descricao: realocacaoData.descricao,
       tipo_item: realocacaoData.tipo_item,
       url_imagem: realocacaoData.url_imagem,
-      quantidade: realocacaoData.quantidade || 1,
+      quantidade,
       whatsapp: realocacaoData.whatsapp,
       email: realocacaoData.email,
       status: 'ATIVA',
@@ -132,19 +138,26 @@ exports.createRealocacaoService = async (realocacaoData, ongId) => {
 
 // Atualizar realocação
 exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
-  const idNumerico = parseInt(id);
+  validarRealocacao(realocacaoData);
+
+  const idNumerico = parseInt(id, 10);
   if (isNaN(idNumerico) || idNumerico <= 0) {
     throw new Error('ID deve ser um número válido maior que zero');
   }
 
 
   const realocacao = await prisma.produtos.findUnique({
-    where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
+    where: { id_produto: idNumerico }
   });
 
   if (!realocacao) throw new Error('Realocação não encontrada');
   if (realocacao.ong_id !== ongId) throw new Error('Você não tem permissão para modificar esta realocação');
 
+
+    // Converte quantidade se vier definida
+  const quantidade = realocacaoData.quantidade !== undefined
+    ? parseInt(realocacaoData.quantidade, 10)
+    : undefined;
   const atualizada = await prisma.produtos.update({
     where: { id_produto: idNumerico },
     data: {
@@ -152,7 +165,7 @@ exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
       descricao: realocacaoData.descricao,
       tipo_item: realocacaoData.tipo_item,
       url_imagem: realocacaoData.url_imagem,
-      quantidade: realocacaoData.quantidade,
+      ...(quantidade !== undefined && { quantidade }),
       whatsapp: realocacaoData.whatsapp,
       email: realocacaoData.email
       // Sem urgencia e prazo_necessidade para realocações
@@ -190,7 +203,9 @@ exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
 
   const atualizada = await prisma.produtos.update({
     where: { id_produto: idNumerico },
-    data: { status: newStatus }
+    data: { status: newStatus,
+      finalizado_em: new Date()
+    }
   });
 
   return {
@@ -209,7 +224,8 @@ exports.finalizarRealocacoesAntigas = async () => {
       criado_em: { lt: sessentaDiasAtras }
     },
     data: {
-      status: 'FINALIZADA'
+      status: 'FINALIZADA',
+      finalizado_em: new Date()
     }
   });
 
@@ -232,4 +248,30 @@ exports.deleteRealocacaoService = async (id, ongId) => {
   return await prisma.produtos.delete({
     where: { id_produto: idNumerico }
   });
+};
+
+exports.limparRealocacoesExpiradas = async (log = false) => {
+  const seisMesesAtras = getDataSeisMesesAtras();
+
+  const resultadoExcluir = await prisma.produtos.deleteMany({
+    where: {
+      finalidade: 'REALOCACAO',
+      status: 'FINALIZADA',
+      finalizado_em: { lt: seisMesesAtras }
+    }
+  });
+
+  if (log) {
+    console.log(`🗑️ ${resultadoExcluir.count} realocações excluídas (finalizadas há +6 meses)`);
+  }
+
+  return {
+    totalExcluidas: resultadoExcluir.count
+  };
+};
+
+const getDataSeisMesesAtras = () => {
+  const data = new Date();
+  data.setMonth(data.getMonth() - 6);
+  return data;
 };

@@ -37,6 +37,8 @@ model produtos {
   whatsapp            String?               @db.VarChar(20)
   email               String?               @db.VarChar(255)            
   realocacoes_produto realocacoes_produto[]
+
+  finalizado_em    DateTime?
 }
 
 model realocacoes_produto {

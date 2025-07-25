@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-
+const { validarDoacao } = require('./validacao.service');
 // Listar todas as doações públicas (apenas doações ativas)
 
 exports.findAllDoacoesService = async (filtros = {}) => {
@@ -168,6 +168,9 @@ exports.findByIdDoacaoService = async (id) => {
 
 // Criar doação
 exports.createDoacaoService = async (doacaoData, ongId) => {
+
+  validarDoacao(doacaoData);
+
   let prazoNecessidade = null;
 
   // Converte dias_validade (string) para número e calcula a data futura
@@ -208,6 +211,8 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
 
 // Atualizar doação com verificação de propriedade
 exports.updateDoacaoService = async (id, doacaoData, ongId) => {
+  validarDoacao(doacaoData);
+
   const idNumerico = parseInt(id, 10);
   if (isNaN(idNumerico) || idNumerico <= 0) {
     throw new Error('ID deve ser um número válido maior que zero');
@@ -294,7 +299,9 @@ exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
   
   return await prisma.produtos.update({
     where: { id_produto: idNumerico },
-    data: { status: newStatus }
+    data: { status: newStatus,
+      ...(newStatus === 'FINALIZADA' && { finalizado_em: new Date() })
+    }
   });
 };
 
@@ -361,34 +368,28 @@ exports.finalizarDoacoesVencidas = async (log = false) => {
 
 // Finaliza e exclui em massa doações expiradas e antigas
 exports.limparDoacoesExpiradas = async (log = false) => {
-  const agora = new Date();
   const seisMesesAtras = getDataSeisMesesAtras();
-
-  // 1) Finaliza doações ativas cujo prazo expirou
-  const resultadoFinalizar = await prisma.produtos.updateMany({
-    where: {
-      status: 'ATIVA',
-      finalidade: 'DOACAO',
-      prazo_necessidade: { lt: agora }
-    },
-    data: { status: 'FINALIZADA' }
-  });
 
   // 2) Exclui doações criadas há mais de 6 meses
   const resultadoExcluir = await prisma.produtos.deleteMany({
     where: {
       finalidade: 'DOACAO',
-      criado_em: { lt: seisMesesAtras }
+      status: 'FINALIZADA',
+      finalizado_em: { lt: seisMesesAtras }
     }
   });
 
   if (log) {
-    console.log(`✅ ${resultadoFinalizar.count} doações finalizadas (em massa)`);
     console.log(`🗑️ ${resultadoExcluir.count} doações excluídas (antigas)`);
   }
 
   return {
-    totalFinalizadas: resultadoFinalizar.count,
     totalExcluidas: resultadoExcluir.count
   };
 };
+
+function getDataSeisMesesAtras() {
+  const data = new Date();
+  data.setMonth(data.getMonth() - 6);
+  return data;
+}
