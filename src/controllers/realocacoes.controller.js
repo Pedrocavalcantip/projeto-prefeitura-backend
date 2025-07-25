@@ -1,6 +1,6 @@
-const realocacoesService = require('../services/realocacoes.service');
-const { getImageData } = require('../utils/imageUtils');
-const realocacoesService = require('../services/realocacoes.service');
+const realocacoesService = require('../services/realocacoes.service.js');
+const { getImageData } = require('../utils/imageUtils.js');
+
 // Buscar catálogo geral de realocações (Get /realocacoes/catalogo)
 const findCatalogo = async (req, res) => {
   try {

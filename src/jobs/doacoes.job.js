@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { finalizarDoacoesVencidas, limparDoacoesExpiradas } = require('../services/doacoes.service');
+const { finalizarDoacoesVencidas, limparDoacoesExpiradas } = require('../services/doacoes.service.js');
 
 console.log('⏳ Agendador de doações iniciado!');
 

@@ -1,5 +1,5 @@
-const prisma = require('../config/database');
-const { validarRealocacao } = require('./validacao.service');
+const prisma = require('../config/database.js');
+const { validarRealocacao } = require('./validacao.service.js');
 // Listar todas as realocações disponíveis (Get /realocacoes/catalogo)
 exports.findCatalogoService = async (filtros = {}) => {
   const { titulo, tipo_item } = filtros;

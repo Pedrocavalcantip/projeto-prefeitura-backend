@@ -1,8 +1,8 @@
 const express           = require('express');
 const router            = express.Router();
-const doacoesController = require('../controllers/doacoes.controller');
-const authMiddleware    = require('../middlewares/authMiddleware');
-const upload            = require('../middlewares/upload.middleware');
+const doacoesController = require('../controllers/doacoes.controller.js');
+const authMiddleware    = require('../middlewares/authMiddleware.js');
+const upload            = require('../middlewares/upload.middleware.js');
 
 // ========================================
 // ROTAS PÚBLICAS

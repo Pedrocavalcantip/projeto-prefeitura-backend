@@ -5,7 +5,7 @@ const dotenv            = require('dotenv');
 dotenv.config();
 
 require('./src/jobs/doacoes.job');
-require('./src/jobs/realocacoes.job');
+require('./src/jobs/realocacoesJob.js');
 
 
 const authRouter        = require('./src/routes/auth.routes');

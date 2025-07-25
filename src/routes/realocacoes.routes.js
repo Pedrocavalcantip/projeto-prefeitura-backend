@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const realocacoesController = require('../controllers/realocacoes.controller');
-const authMiddleware = require('../middlewares/authMiddleware');
-const upload            = require('../middlewares/upload.middleware');
+const realocacoesController = require('../controllers/realocacoes.controller.js');
+const authMiddleware = require('../middlewares/authMiddleware.js');
+const upload            = require('../middlewares/upload.middleware.js');
 
 
 // get das relocacoes

@@ -1,5 +1,5 @@
 const axios = require('axios');
-const prisma = require('../config/database');
+const prisma = require('../config/database.js');
 
 // Autentica na API da prefeitura
 exports.loginNaApiPrefeitura = async (email, password) => {

@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const {
   finalizarRealocacoesAntigas,
   limparRealocacoesExpiradas
-} = require('../services/realocacoes.service');
+} = require('../services/realocacoes.service.js');
 
 console.log('⏰ Agendador de realocações iniciado!');
 

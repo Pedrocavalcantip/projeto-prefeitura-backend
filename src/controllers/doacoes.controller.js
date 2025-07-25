@@ -1,6 +1,6 @@
-const doacoesService = require('../services/doacoes.service');
-const { validateToken } = require('../utils/tokenUtils');
-const { getImageData } = require('../utils/imageUtils');
+const doacoesService = require('../services/doacoes.service.js');
+const { validateToken } = require('../utils/tokenUtils.js');
+const { getImageData } = require('../utils/imageUtils.js');
 
 // Listar todas as doações públicas (filtros opcionais)
 exports.findAll = async (req, res) => {
