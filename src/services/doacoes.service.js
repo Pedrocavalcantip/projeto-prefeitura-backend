@@ -324,8 +324,15 @@ exports.deleteDoacaoService = async (id, ongId) => {
 
 
 //clean up
-// Finalizar doações vencidas
-exports.finalizarDoacoesVencidas = async () => {
+// Limpar doações expiradas (em massa)
+function getDataSeisMesesAtras() {
+  const data = new Date();
+  data.setMonth(data.getMonth() - 6);
+  return data;
+}
+
+// Finaliza doações vencidas individualmente
+exports.finalizarDoacoesVencidas = async (log = false) => {
   const expiradas = await prisma.produtos.findMany({
     where: {
       status: 'ATIVA',
@@ -336,21 +343,22 @@ exports.finalizarDoacoesVencidas = async () => {
 
   const ids = [];
   for (const doacao of expiradas) {
-    // Aqui usamos o ong_id da própria doação para cumprir a checagem de permissão
     await updateStatusDoacaoService(doacao.id_produto, 'FINALIZADA', doacao.ong_id);
     ids.push(doacao.id_produto);
+  }
+
+  if (log) {
+    console.log(`✅ ${ids.length} doações finalizadas (individuais):`, ids);
   }
   return ids;
 };
 
-
-// Limpar doações expiradas (finalizar e excluir)
-exports.limparDoacoesExpiradas = async () => {
+// Finaliza e exclui em massa doações expiradas e antigas
+exports.limparDoacoesExpiradas = async (log = false) => {
   const agora = new Date();
-  const seisMesesAtras = new Date();
-  seisMesesAtras.setMonth(agora.getMonth() - 6);
+  const seisMesesAtras = getDataSeisMesesAtras();
 
-  // 1) Finaliza em massa as doações cujo prazo já passou
+  // 1) Finaliza doações ativas cujo prazo expirou
   const resultadoFinalizar = await prisma.produtos.updateMany({
     where: {
       status: 'ATIVA',
@@ -360,13 +368,18 @@ exports.limparDoacoesExpiradas = async () => {
     data: { status: 'FINALIZADA' }
   });
 
-  // 2) Exclui em massa as doações criadas há mais de 6 meses
+  // 2) Exclui doações criadas há mais de 6 meses
   const resultadoExcluir = await prisma.produtos.deleteMany({
     where: {
       finalidade: 'DOACAO',
       criado_em: { lt: seisMesesAtras }
     }
   });
+
+  if (log) {
+    console.log(`✅ ${resultadoFinalizar.count} doações finalizadas (em massa)`);
+    console.log(`🗑️ ${resultadoExcluir.count} doações excluídas (antigas)`);
+  }
 
   return {
     totalFinalizadas: resultadoFinalizar.count,

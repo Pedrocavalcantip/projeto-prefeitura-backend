@@ -58,7 +58,7 @@ router.delete(
 
 // Rota para finalizar expiradas individualmente
 router.patch(
-  '/doacoes/expiradas/status',
+  '/doacoes/expiradas',
   validateToken,
   doacoesController.finalizarExpiradas
 );
