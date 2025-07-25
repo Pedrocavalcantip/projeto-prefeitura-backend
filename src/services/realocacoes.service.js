@@ -176,6 +176,11 @@ exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
   if (!statusPermitidos.includes(newStatus)) {
     throw new Error('Status deve ser ATIVA ou FINALIZADA');
   }
+  // Não permitir reativar realocação finalizada
+  if (realocacao.status === 'FINALIZADA' && newStatus === 'ATIVA') {
+    throw new Error('Não é permitido reativar uma realocação finalizada.');
+  }
+
   const realocacao = await prisma.produtos.findUnique({
     where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
   });
