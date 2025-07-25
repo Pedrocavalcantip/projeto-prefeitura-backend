@@ -1,34 +1,29 @@
 const realocacoesService = require('../services/realocacoes.service');
 
-// Listar realocações: catálogo entre ONGs OU realocações da ONG logada
-const findAll = async (req, res) => {
+// Buscar catálogo geral de realocações (Get /realocacoes/catalogo)
+const findCatalogo = async (req, res) => {
   try {
     if (!req.id_ong) {
       return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
     }
-    const { minha } = req.query;
     const ongId = req.id_ong;
-
-    // Se quer ver apenas suas próprias realocações
-    if (minha === 'true') {
-      const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
-      return res.status(200).json(realocacoes);
-    }
 
     // Catálogo geral para ONGs, com filtros opcionais
     const filtros = {
       titulo: req.query.titulo,
       tipo_item: req.query.tipo_item
     };
-    const realocacoes = await realocacoesService.findAllRealocacoesService(filtros);
+
+    const realocacoes = await realocacoesService.findCatalogoService(filtros);
     res.status(200).json(realocacoes);
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Buscar realocação específica (ONGs podem ver detalhes para contato)
-const findById = async (req, res) => {
+// Buscar realocação específica (GET /realocacoes/catalogo/:id)
+const findCatalogoById = async (req, res) => {
   try {
     if (!req.id_ong) {
       return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
@@ -39,7 +34,7 @@ const findById = async (req, res) => {
       return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
 
-    const realocacao = await realocacoesService.findByIdRealocacaoService(id);
+    const realocacao = await realocacoesService.findCatalogoByIdService(id);
     res.status(200).json(realocacao);
   } catch (error) {
     if (error.message.includes('não encontrada')) {
@@ -49,7 +44,22 @@ const findById = async (req, res) => {
   }
 };
 
-// Criar nova realocação
+// lista as relocacoes da ong logada (GET /relocacoes/minhas-realocacoes)
+const findMinhasRealocacoes = async (req, res) => {
+  try {
+    if (!req.id_ong) {
+      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
+    }
+    const ongId = req.id_ong;
+
+    const realocacoes = await realocacoesService.findRealocacoesDaOngService(ongId);
+    res.status(200).json(realocacoes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Criar nova realocação (POST /realocacoes)
 const create = async (req, res) => {
   try {
     const newRealocacao = req.body;
@@ -118,7 +128,7 @@ const create = async (req, res) => {
   }
 };
 
-/// Atualizar realocação
+/// Atualizar realocação (PUT /realocacoes/:id)
 const update = async (req, res) => {
   try {
     const { id } = req.params;
@@ -260,8 +270,9 @@ const deleteRealocacao = async (req, res) => {
 };
 
 module.exports = {
-  findAll,
-  findById,
+  findcatalogo,
+  findCatalogoById,
+  findMinhasRealocacoes,
   create,
   update,
   updateStatus,

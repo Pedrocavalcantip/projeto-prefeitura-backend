@@ -1,7 +1,7 @@
 const prisma = require('../config/database');
 
-// Listar todas as realocações disponíveis (API restrita para ONGs autenticadas)
-exports.findAllRealocacoesService = async (filtros = {}) => {
+// Listar todas as realocações disponíveis (Get /realocacoes/catalogo)
+exports.findCatalogoService = async (filtros = {}) => {
   const { titulo, tipo_item } = filtros;
 
   return await prisma.produtos.findMany({
@@ -30,6 +30,7 @@ exports.findAllRealocacoesService = async (filtros = {}) => {
       url_imagem: true,
       status: true,
       criado_em: true,
+      prazo_necessidade: true,
       ong: {
         select: {
           nome: true,
@@ -39,14 +40,13 @@ exports.findAllRealocacoesService = async (filtros = {}) => {
       }
     },
     orderBy: {
-      criado_em: 'desc'
+      criado_em: 'cresc'
     }
   });
 };
 
-
-// Buscar realocação específica por ID (API restrita para ONGs autenticadas)
-exports.findByIdRealocacaoService = async (id) => {
+// Buscar realocação específica por ID (Get /realocacoes/catalogo/:id)
+exports.findCatalogoByIdService = async (id) => {
   const idNumerico = parseInt(id);
 
   if (isNaN(idNumerico) || idNumerico <= 0) {
@@ -56,17 +56,21 @@ exports.findByIdRealocacaoService = async (id) => {
   const produto = await prisma.produtos.findUnique({
     where: {
       id_produto: idNumerico,
+      status: 'ATIVA',
       finalidade: 'REALOCACAO'
     },
-    include: {
+    select: {
+      id_produto: true,
+      titulo: true,
+      descricao: true,
+      tipo_item: true,
+      quantidade: true,
+      url_imagem: true,
+      prazo_necessidade: true,
       ong: {
         select: {
           nome: true,
-          whatsapp: true,
           logo_url: true,
-          instagram: true,
-          facebook: true,
-          site: true
         }
       }
     }
@@ -81,8 +85,8 @@ exports.findByIdRealocacaoService = async (id) => {
   };
 };
 
-// Listar realocações da ONG logada
-exports.findRealocacoesDaOngService = async (ongId) => {
+// Listar realocações da ONG logada (Get /relocacoes/minhas-realocacoes)
+exports.findRelocacoesDaOngService = async (ongId) => {
   return await prisma.produtos.findMany({
     where: {
       ong_id: ongId,
@@ -92,8 +96,6 @@ exports.findRealocacoesDaOngService = async (ongId) => {
       id_produto: true,
       titulo: true,
       descricao: true,
-      tipo_item: true,
-      quantidade: true,
       status: true,
       url_imagem: true,
       criado_em: true,
@@ -174,7 +176,6 @@ exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
   if (!statusPermitidos.includes(newStatus)) {
     throw new Error('Status deve ser ATIVA ou FINALIZADA');
   }
-
   const realocacao = await prisma.produtos.findUnique({
     where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
   });
@@ -192,6 +193,23 @@ exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
   };
 };
 
+//Finalizar realocações ativas com mais de 60 dias
+exports.finalizarRealocacoesAntigas = async () => {
+  const sessentaDiasAtras = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+
+  const resultado = await prisma.produtos.updateMany({
+    where: {
+      status: 'ATIVA',
+      finalidade: 'REALOCACAO',
+      criado_em: { lt: sessentaDiasAtras }
+    },
+    data: {
+      status: 'FINALIZADA'
+    }
+  });
+
+  return resultado;
+};
 // Deletar
 exports.deleteRealocacaoService = async (id, ongId) => {
   const idNumerico = parseInt(id);

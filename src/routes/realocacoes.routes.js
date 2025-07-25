@@ -3,12 +3,10 @@ const router = express.Router();
 const realocacoesController = require('../controllers/realocacoes.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// ========================================
-// ROTAS PROTEGIDAS
-// ========================================
-
-router.get('/', authMiddleware, realocacoesController.findAll);
-router.get('/:id', authMiddleware, realocacoesController.findById);
+// get das relocacoes
+router.get('/catalogo', authMiddleware, realocacoesController.findCatalogo);
+router.get('/catalogo/:id', authMiddleware, realocacoesController.findCatalogoById);
+router.get('/minhas-relocacoes', authMiddleware, realocacoesController.findMinhasRealocacoes);
 
 // POST /realocacoes - Criar nova realocação
 router.post('/', authMiddleware, realocacoesController.create);

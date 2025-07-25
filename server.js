@@ -1,3 +1,5 @@
+require ('./src/jobs/realocacoesJob'); 
+
 const app = require('./index');
 const port = process.env.PORT || 3000;
 
