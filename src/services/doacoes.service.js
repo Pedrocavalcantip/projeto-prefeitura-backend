@@ -168,15 +168,18 @@ exports.findByIdDoacaoService = async (id) => {
 
 // Criar doação
 exports.createDoacaoService = async (doacaoData, ongId) => {
-  // Converter data para ISO DateTime se fornecida
   let prazoNecessidade = null;
-  if (doacaoData.prazo_necessidade) {
-    const dataString = doacaoData.prazo_necessidade;
-    if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      prazoNecessidade = new Date(dataString + 'T23:59:59.000Z').toISOString();
-    } else {
-      prazoNecessidade = new Date(dataString).toISOString();
-    }
+
+  // Converte dias_validade (string) para número e calcula a data futura
+  const diasValidade = doacaoData.dias_validade
+    ? parseInt(doacaoData.dias_validade, 10)
+    : null;
+
+  if (diasValidade && diasValidade > 0) {
+    const dataFinal = new Date();
+    dataFinal.setDate(dataFinal.getDate() + diasValidade);
+    dataFinal.setHours(23, 59, 59, 999); // fim do dia
+    prazoNecessidade = dataFinal.toISOString();
   }
 
   // Converte quantidade para número (default 1)
@@ -191,8 +194,8 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       tipo_item:         doacaoData.tipo_item,
       prazo_necessidade: prazoNecessidade,
       url_imagem:        doacaoData.url_imagem,
-      urgencia:          doacaoData.urgencia  || 'MEDIA',
-      quantidade,   // <— usa o número convertido
+      urgencia:          doacaoData.urgencia || 'MEDIA',
+      quantidade,
       status:            'ATIVA',
       finalidade:        'DOACAO',
       email:             doacaoData.email,
@@ -202,6 +205,7 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
   });
 };
 
+
 // Atualizar doação com verificação de propriedade
 exports.updateDoacaoService = async (id, doacaoData, ongId) => {
   const idNumerico = parseInt(id, 10);
@@ -209,7 +213,6 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
     throw new Error('ID deve ser um número válido maior que zero');
   }
 
-  // Verifica existência e propriedade
   const doacao = await prisma.produtos.findUnique({
     where: { id_produto: idNumerico }
   });
@@ -220,15 +223,18 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
     throw new Error('Você não tem permissão para modificar esta doação');
   }
 
-  // Converter data para ISO DateTime se fornecida
   let prazoNecessidade = null;
-  if (doacaoData.prazo_necessidade) {
-    const dataString = doacaoData.prazo_necessidade;
-    if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      prazoNecessidade = new Date(dataString + 'T23:59:59.000Z').toISOString();
-    } else {
-      prazoNecessidade = new Date(dataString).toISOString();
-    }
+
+  // Converte dias_validade (string) para número e calcula a nova data
+  const diasValidade = doacaoData.dias_validade
+    ? parseInt(doacaoData.dias_validade, 10)
+    : null;
+
+  if (diasValidade && diasValidade > 0) {
+    const dataFinal = new Date();
+    dataFinal.setDate(dataFinal.getDate() + diasValidade);
+    dataFinal.setHours(23, 59, 59, 999); // fim do dia
+    prazoNecessidade = dataFinal.toISOString();
   }
 
   // Converte quantidade se vier definida
@@ -245,7 +251,7 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
       prazo_necessidade: prazoNecessidade,
       url_imagem:        doacaoData.url_imagem,
       urgencia:          doacaoData.urgencia,
-      ...(quantidade !== undefined && { quantidade }),  // só inclui se foi convertido
+      ...(quantidade !== undefined && { quantidade }),
       email:             doacaoData.email,
       whatsapp:          doacaoData.whatsapp
     }
