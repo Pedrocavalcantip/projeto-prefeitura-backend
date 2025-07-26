@@ -49,8 +49,6 @@ exports.findAllDoacoesService = async (filtros = {}) => {
 };
 
 
-
-
 exports.findDoacoesPrestesAVencerService = async () => {
   return await prisma.produtos.findMany({
     where: {
@@ -85,8 +83,6 @@ exports.findDoacoesPrestesAVencerService = async () => {
     }
   });
 };
-
-
 
 // Seleciona doações ATIVAS da ONG
 exports.findMinhasDoacoesAtivasService = async (ongId) => {
@@ -153,8 +149,6 @@ exports.findMinhasDoacoesFinalizadasService = async (ongId) => {
     }
   });
 };
-
-
 
 // Buscar doação específica (visualização pública)
 exports.findByIdDoacaoService = async (id) => {
@@ -232,7 +226,7 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       prazo_necessidade: prazoNecessidade,
       url_imagem:        doacaoData.url_imagem,
       urgencia:          doacaoData.urgencia || 'MEDIA',
-      quantidade,
+      quantidade:        doacaoData.quantidade,
       status:            'ATIVA',
       finalidade:        'DOACAO',
       email:             doacaoData.email,
@@ -241,7 +235,6 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
     }
   });
 };
-
 
 // Atualizar doação com verificação de propriedade
 exports.updateDoacaoService = async (id, doacaoData, ongId) => {
@@ -368,7 +361,6 @@ exports.deleteDoacaoService = async (id, ongId) => {
     where: { id_produto: idNumerico }
   });
 };
-
 
 //clean up
 // Limpar doações expiradas (em massa)

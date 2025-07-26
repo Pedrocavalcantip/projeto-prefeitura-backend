@@ -158,6 +158,22 @@ const updateStatus = async (req, res) => {
   }
 };
 
+// Finalizar realocações antigas
+const finalizarRealocacoesAntigas = async (req, res) => {
+  try {
+      const ids = await realocacoesService.finalizarRealocacoesAntigas();
+      return res.status(200).json({
+        message: 'Realocações antigas finalizadas com sucesso.',
+        idsFinalizadas: ids
+      });
+    } catch (error) {
+      console.error('Erro em finalizarRealocacoesAntigas:', error);
+      return res
+        .status(500)
+        .json({ message: 'Erro interno ao finalizar realocações antigas.' });
+    }
+  };
+
 // Deletar realocação
 const deleteRealocacao = async (req, res) => {
   try {
@@ -184,6 +200,24 @@ const deleteRealocacao = async (req, res) => {
   }
 };
 
+const limparRealocacoesExpiradas = async (req, res) => {
+   {
+    try {
+      const resultado = await realocacoesService.limparRealocacoesExpiradas(true);
+      return res.status(200).json({
+        message: 'Limpeza de realocações expiradas realizada com sucesso.',
+        detalhes: resultado
+      });
+    } catch (error) {
+      console.error('Erro em limparRealocacoesExpiradas:', error);
+      return res
+        .status(500)
+        .json({ message: 'Erro interno ao limpar realocações expiradas.' });
+    }
+  };
+}
+
+
 module.exports = {
   findCatalogo,
   findCatalogoById,
@@ -192,5 +226,7 @@ module.exports = {
   create,
   update,
   updateStatus,
+  finalizarRealocacoesAntigas,
   deleteRealocacao,
+  limparRealocacoesExpiradas
 };

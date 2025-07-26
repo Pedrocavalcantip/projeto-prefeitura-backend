@@ -9,7 +9,7 @@ router.post('/login', login);
 
 // Rota protegida (exemplo)
 router.get('/protegida', verificarToken, (req, res) => {
-    res.json({ mensagem: `Você acessou uma rota protegida! Email: ${req.email}` });
+    res.json({ mensagem: `Você acessou uma rota protegida! Email: ${req.email_ong}` });
 });
 
 module.exports = router;

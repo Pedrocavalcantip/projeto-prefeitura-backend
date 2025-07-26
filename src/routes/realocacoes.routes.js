@@ -13,13 +13,13 @@ router.get('/minhas/finalizadas', authMiddleware, realocacoesController.findMinh
 
 
 // POST /realocacoes - Criar nova realocação
-router.post('/', authMiddleware, realocacoesController.create);
+router.post('/', authMiddleware, upload.single('foto'),  realocacoesController.create);
 
 // PUT /realocacoes/:id - Atualizar realocação
 router.put('/:id', authMiddleware, upload.single('foto'), realocacoesController.update);
 
 // PATCH /realocacoes/:id/status - Atualizar status da realocação
-router.patch('/:id/status', authMiddleware, upload.single('foto'), realocacoesController.updateStatus);
+router.patch('/:id/status', authMiddleware, realocacoesController.updateStatus);
 
 // DELETE /realocacoes/:id - Deletar realocação
 router.delete('/:id', authMiddleware, realocacoesController.deleteRealocacao);
