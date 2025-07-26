@@ -11,7 +11,7 @@ model ongs {
   id_ong                Int                   @id @default(autoincrement())
   nome                  String                @db.VarChar(100)
   email_ong             String                @unique @db.VarChar(255)
-  logo_url              String?               @db.VarChar(255)
+  logo_url              String               @db.VarChar(255)
   produtos              produtos[]
 }
 
@@ -25,7 +25,7 @@ model produtos {
   criado_em           DateTime?             @default(now()) @db.Timestamp(6)
   ong_id              Int
   finalidade          FinalidadeProduto     @default(DOACAO)
-  quantidade          Int?                   @default(1)
+  quantidade          Int?                  @default(1)
   urgencia            NivelUrgencia         @default(MEDIA)
   status              StatusProduto         @default(ATIVA)
   email               String                @db.VarChar(255)
