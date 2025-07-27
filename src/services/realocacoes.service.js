@@ -206,38 +206,44 @@ exports.updateRealocacaoService = async (id, realocacaoData, ongId) => {
 
 // Atualizar status
 exports.updateStatusRealocacaoService = async (id, newStatus, ongId) => {
-  const idNumerico = parseInt(id);
+  const idNumerico = parseInt(id, 10);
   if (isNaN(idNumerico) || idNumerico <= 0) {
     throw new Error('ID deve ser um número válido maior que zero');
   }
 
-  // Validar status permitido
+  // Validação do novo status
   const statusPermitidos = ['ATIVA', 'FINALIZADA'];
   if (!statusPermitidos.includes(newStatus)) {
     throw new Error('Status deve ser ATIVA ou FINALIZADA');
   }
-  // Não permitir reativar realocação finalizada
+
+  // Primeiro, busca a realocação
+  const realocacao = await prisma.produtos.findUnique({
+    where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
+  });
+  if (!realocacao) {
+    throw new Error('Realocação não encontrada');
+  }
+  if (realocacao.ong_id !== ongId) {
+    throw new Error('Você não tem permissão para modificar esta realocação');
+  }
+
+  // Agora sim, impede reativação de finalizadas
   if (realocacao.status === 'FINALIZADA' && newStatus === 'ATIVA') {
     throw new Error('Não é permitido reativar uma realocação finalizada.');
   }
 
-  const realocacao = await prisma.produtos.findUnique({
-    where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
-  });
-
-  if (!realocacao) throw new Error('Realocação não encontrada');
-  if (realocacao.ong_id !== ongId) throw new Error('Você não tem permissão para modificar esta realocação');
-
+  // Por fim, atualiza
   const atualizada = await prisma.produtos.update({
     where: { id_produto: idNumerico },
-    data: { status: newStatus,
-      finalizado_em: new Date()
+    data: {
+      status: newStatus,
+      // só define finalizado_em se estiver passando a FINALIZADA
+      ...(newStatus === 'FINALIZADA' && { finalizado_em: new Date() })
     }
   });
 
-  return {
-    ...atualizada
-  };
+  return { ...atualizada };
 };
 
 //Finalizar realocações ativas com mais de 60 dias

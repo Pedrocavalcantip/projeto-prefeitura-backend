@@ -214,9 +214,7 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
   }
 
   // Converte quantidade para número (default 1)
-  const quantidade = doacaoData.quantidade
-    ? parseInt(doacaoData.quantidade, 10)
-    : 1;
+  const quantidade = parseInt(doacaoData.quantidade || '1', 10);
 
   return await prisma.produtos.create({
     data: {
@@ -224,9 +222,9 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       descricao:         doacaoData.descricao,
       tipo_item:         doacaoData.tipo_item,
       prazo_necessidade: prazoNecessidade,
-      url_imagem:        doacaoData.url_imagem,
+      url_imagem:       doacaoData.url_imagem,
       urgencia:          doacaoData.urgencia || 'MEDIA',
-      quantidade:        doacaoData.quantidade,
+      quantidade,
       status:            'ATIVA',
       finalidade:        'DOACAO',
       email:             doacaoData.email,
@@ -382,7 +380,12 @@ exports.finalizarDoacoesVencidas = async (log = false) => {
 
   const ids = [];
   for (const doacao of expiradas) {
-    await updateStatusDoacaoService(doacao.id_produto, 'FINALIZADA', doacao.ong_id);
+    // chamar o service exportado, não um identificador local
+    await exports.updateStatusDoacaoService(
+      doacao.id_produto,
+      'FINALIZADA',
+      doacao.ong_id
+    );
     ids.push(doacao.id_produto);
   }
 
@@ -414,8 +417,3 @@ exports.limparDoacoesExpiradas = async (log = false) => {
   };
 };
 
-function getDataSeisMesesAtras() {
-  const data = new Date();
-  data.setMonth(data.getMonth() - 6);
-  return data;
-}
