@@ -19,43 +19,46 @@ const regexWhatsapp = /^\d{10,13}$/;
 /**
  * Valida campos obrigatórios e formatos comuns
  */
-function validarCamposComuns(dados) {
+function validarCamposComuns(dados, modo = 'criar') {
   const obrigatorios = ['titulo', 'descricao', 'tipo_item', 'url_imagem', 'whatsapp', 'email'];
 
   for (const campo of obrigatorios) {
     const valor = dados[campo];
-    if (valor === undefined || valor === null || (typeof valor === 'string' && valor.trim() === '')) {
+
+    if (modo === 'criar' && (valor === undefined || valor === null || (typeof valor === 'string' && valor.trim() === ''))) {
       throw new Error(`O campo '${campo}' é obrigatório e não pode estar vazio.`);
+    }
+
+    if (modo === 'atualizar' && campo in dados && (valor === null || (typeof valor === 'string' && valor.trim() === ''))) {
+      throw new Error(`O campo '${campo}' não pode estar vazio ao ser atualizado.`);
     }
   }
 
-  if (!categoriasValidas.includes(dados.tipo_item)) {
+  if ('tipo_item' in dados && !categoriasValidas.includes(dados.tipo_item)) {
     throw new Error('O campo tipo_item deve ser uma das categorias válidas.');
   }
 
-  if (!regexUrl.test(dados.url_imagem)) {
+  if ('url_imagem' in dados && !regexUrl.test(dados.url_imagem)) {
     throw new Error('O campo url_imagem deve conter uma URL válida.');
   }
 
-  if (!regexEmail.test(dados.email)) {
+  if ('email' in dados && !regexEmail.test(dados.email)) {
     throw new Error('O campo email deve conter um endereço válido.');
   }
 
-  if (!regexWhatsapp.test(dados.whatsapp)) {
+  if ('whatsapp' in dados && !regexWhatsapp.test(dados.whatsapp)) {
     throw new Error('O campo whatsapp deve conter apenas números (10 a 13 dígitos).');
   }
 
-  // Validação de quantidade
   if (dados.quantidade !== undefined) {
     const quantidade = parseInt(dados.quantidade, 10);
     if (isNaN(quantidade) || quantidade <= 0) {
       throw new Error('A quantidade deve ser um número maior que zero.');
     }
     dados.quantidade = quantidade;
-  } else {
-    dados.quantidade = 1; // valor padrão
   }
 }
+
 
 /**
  * Valida dados de doações (inclui urgência e prazo)
@@ -88,11 +91,12 @@ function validarDoacao(dados) {
 /**
  * Valida dados de realocações (sem urgência nem prazo)
  */
-function validarRealocacao(dados) {
-  validarCamposComuns(dados);
+function validarRealocacao(dados, modo = 'criar') {
+  validarCamposComuns(dados, modo);
 }
 
 module.exports = {
   validarDoacao,
-  validarRealocacao
+  validarRealocacao,
+  validarCamposComuns
 };

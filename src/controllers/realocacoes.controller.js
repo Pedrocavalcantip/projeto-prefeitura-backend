@@ -86,19 +86,16 @@ exports.create = async (req, res) => {
   }
 
   const dados = { ...req.body, url_imagem: imgData.url };
-  const validacao = validarDadosRealocacao(dados);
-  if (!validacao.valido) {
-    return res.status(400).json({ message: validacao.mensagem });
-  }
 
   try {
     const criada = await realocacoesService.createRealocacaoService(dados, ongId);
     return res.status(201).json(criada);
   } catch (error) {
     console.error('Erro ao criar realocação:', error);
-    return res.status(500).json({ message: 'Erro interno ao criar realocação.' });
+    return res.status(400).json({ message: error.message });
   }
 };
+
 
 // PUT /realocacoes/:id
 exports.update = async (req, res) => {
@@ -106,35 +103,21 @@ exports.update = async (req, res) => {
   if (!tokenInfo.valid) {
     return res.status(401).json({ message: tokenInfo.error });
   }
+
   const ongId = tokenInfo.decoded.id_ong;
-  const idNum = parseInt(req.params.id, 10);
-  if (isNaN(idNum) || idNum <= 0) {
-    return res.status(400).json({ message: 'ID inválido.' });
-  }
-
   const imgData = getImageData(req);
-  if (!imgData) {
-    return res.status(400).json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
-  }
 
-  const dados = { ...req.body, url_imagem: imgData.url };
-  const validacao = validarDadosRealocacao(dados);
-  if (!validacao.valido) {
-    return res.status(400).json({ message: validacao.mensagem });
+  const dados = { ...req.body };
+  if (imgData) {
+    dados.url_imagem = imgData.url;
   }
 
   try {
-    const atualizada = await realocacoesService.updateRealocacaoService(idNum, dados, ongId);
+    const atualizada = await realocacoesService.updateRealocacaoService(req.params.id, dados, ongId);
     return res.status(200).json(atualizada);
   } catch (error) {
-    console.error('Erro ao atualizar realocação:', error);
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes('permissão')) {
-      return res.status(403).json({ message: error.message });
-    }
-    return res.status(500).json({ message: 'Erro interno ao atualizar realocação.' });
+    const status = error.status || 400;
+    return res.status(status).json({ message: error.message || 'Erro ao atualizar realocação' });
   }
 };
 
@@ -144,29 +127,18 @@ exports.updateStatus = async (req, res) => {
   if (!tokenInfo.valid) {
     return res.status(401).json({ message: tokenInfo.error });
   }
-  const { id } = req.params;
-  if (isNaN(id) || parseInt(id, 10) <= 0) {
-    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-  }
-  const { status } = req.body;
-  if (!['ATIVA', 'FINALIZADA'].includes(status)) {
-    return res.status(400).json({ message: 'Status inválido. Use ATIVA ou FINALIZADA.' });
-  }
+
+  const ongId = tokenInfo.decoded.id_ong;
 
   try {
-    const ongId = tokenInfo.decoded.id_ong;
-    const updated = await realocacoesService.updateStatusRealocacaoService(id, status, ongId);
-    return res.status(200).json(updated);
+    const finalizada = await realocacoesService.finalizarRealocacaoService(req.params.id, ongId);
+    return res.status(200).json(finalizada);
   } catch (error) {
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes('permissão')) {
-      return res.status(403).json({ message: error.message });
-    }
-    return res.status(500).json({ message: error.message });
+    const status = error.status || 400;
+    return res.status(status).json({ message: error.message || 'Erro ao finalizar realocação' });
   }
 };
+
 
 // PATCH /realocacoes/expiradas
 exports.finalizarRealocacoesAntigas = async (req, res) => {
