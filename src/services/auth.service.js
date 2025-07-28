@@ -12,7 +12,7 @@ exports.loginNaApiPrefeitura = async (email_ong, password) => {
   } catch (error) {
     console.error('Erro na API da prefeitura:', error.response?.data || error.message);
     if (error.response?.status === 401) {
-      throw new Error('401: Falha na autenticação');
+      throw new Error('Falha na autenticação');
     }
     throw new Error('Falha na autenticação com a API da prefeitura');
   }

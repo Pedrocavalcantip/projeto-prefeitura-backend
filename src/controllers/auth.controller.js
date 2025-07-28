@@ -12,7 +12,7 @@ exports.login = async (req, res) => {
     console.log('🔍 Resposta completa da prefeitura:', apiResponse);
 
     // Ajuste aqui se a API retornar em apiResponse.data:
-    const { ngo: ongDataFromApi, user: userDataFromApi } = apiResponse;
+    const { ong: ongDataFromApi, user: userDataFromApi } = apiResponse;
 
     console.log('📊 Dados da ONG recebidos:', ongDataFromApi);
     console.log('👤 Dados do usuário recebidos:', userDataFromApi);
