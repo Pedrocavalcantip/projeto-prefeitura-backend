@@ -194,26 +194,29 @@ exports.findByIdDoacaoService = async (id) => {
   return produto;
 };
 
-// Criar doação
 exports.createDoacaoService = async (doacaoData, ongId) => {
-
+  const ong = await prisma.ongs.findUnique({ where: { id_ong: ongId } });
+  if (!ong) {
+    throw new Error('ONG não encontrada.');
+  }
   validarDoacao(doacaoData);
 
   let prazoNecessidade = null;
 
-  // Converte dias_validade (string) para número e calcula a data futura
-  const diasValidade = doacaoData.dias_validade
-    ? parseInt(doacaoData.dias_validade, 10)
-    : null;
-
-  if (diasValidade && diasValidade > 0) {
-    const dataFinal = new Date();
-    dataFinal.setDate(dataFinal.getDate() + diasValidade);
-    dataFinal.setHours(23, 59, 59, 999); // fim do dia
-    prazoNecessidade = dataFinal.toISOString();
+  if (doacaoData.dias_validade) {
+    // Se vier dias_validade, calcula a data futura
+    const diasValidade = parseInt(doacaoData.dias_validade, 10);
+    if (diasValidade > 0) {
+      const dataFinal = new Date();
+      dataFinal.setDate(dataFinal.getDate() + diasValidade);
+      dataFinal.setHours(23, 59, 59, 999); // fim do dia
+      prazoNecessidade = dataFinal.toISOString().slice(0, 10); // só a data
+    }
+  } else if (doacaoData.prazo_necessidade) {
+    // Se vier prazo_necessidade, usa direto
+    prazoNecessidade = new Date(doacaoData.prazo_necessidade);
   }
 
-  // Converte quantidade para número (default 1)
   const quantidade = parseInt(doacaoData.quantidade || '1', 10);
 
   return await prisma.produtos.create({
@@ -221,8 +224,9 @@ exports.createDoacaoService = async (doacaoData, ongId) => {
       titulo:            doacaoData.titulo,
       descricao:         doacaoData.descricao,
       tipo_item:         doacaoData.tipo_item,
+      criado_em:         new Date(),
       prazo_necessidade: prazoNecessidade,
-      url_imagem:       doacaoData.url_imagem,
+      url_imagem:        doacaoData.url_imagem,
       urgencia:          doacaoData.urgencia || 'MEDIA',
       quantidade,
       status:            'ATIVA',

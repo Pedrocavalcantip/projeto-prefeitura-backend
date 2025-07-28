@@ -42,6 +42,24 @@ exports.findPrestesAVencer = async (req, res) => {
   }
 };
 
+// Buscar doação por ID
+exports.findById = async (req, res) => {
+  try {
+    const idNum = parseInt(req.params.id, 10);
+    if (isNaN(idNum) || idNum <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
+    const doacao = await doacoesService.findByIdDoacaoService(idNum);
+    return res.status(200).json(doacao);
+  } catch (error) {
+    console.error('findById:', error);
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    return res.status(500).json({ message: 'Erro interno ao buscar doação.' });
+  }
+};
+
 // Listar as doações da ONG logada (filtro por status)
 // GET /doacoes/minhas/ativas
 exports.findMinhasAtivas = async (req, res) => {
@@ -75,23 +93,6 @@ exports.findMinhasFinalizadas = async (req, res) => {
   }
 };
 
-// Buscar doação por ID
-exports.findById = async (req, res) => {
-  try {
-    const idNum = parseInt(req.params.id, 10);
-    if (isNaN(idNum) || idNum <= 0) {
-      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-    }
-    const doacao = await doacoesService.findByIdDoacaoService(idNum);
-    return res.status(200).json(doacao);
-  } catch (error) {
-    console.error('findById:', error);
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
-    }
-    return res.status(500).json({ message: 'Erro interno ao buscar doação.' });
-  }
-};
 
 // Criar nova doação (com upload ou url_imagem)
 exports.create = async (req, res) => {
@@ -111,8 +112,8 @@ exports.create = async (req, res) => {
     const criada = await doacoesService.createDoacaoService(doacaoData, ongId);
     return res.status(201).json(criada);
   } catch (error) {
-    console.error('create:', error);
-    return res.status(500).json({ message: 'Erro interno ao criar doação.' });
+    console.error('create:', error); 
+    return res.status(400).json({ message: error.message });
   }
 };
 

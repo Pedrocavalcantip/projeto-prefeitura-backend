@@ -82,6 +82,13 @@ function validarDoacao(dados) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data) && isNaN(Date.parse(data))) {
       throw new Error('O campo prazo_necessidade deve ser uma data válida no formato YYYY-MM-DD ou ISO.');
     }
+    // NOVA VALIDAÇÃO: não permitir datas no passado
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0); // Zera hora para comparar só a data
+    const dataPrazo = new Date(data);
+    if (dataPrazo < hoje) {
+      throw new Error('O campo prazo_necessidade não pode ser uma data no passado.');
+    }
   }
 }
 
