@@ -37,7 +37,6 @@ exports.findAllDoacoesService = async (filtros = {}) => {
         select: {
           nome: true,
           logo_url: true,
-          site: true
         }
       }
     },
@@ -107,7 +106,6 @@ exports.findMinhasDoacoesAtivasService = async (ongId) => {
         select: {
           nome:     true,
           logo_url: true,
-          site:     true
         }
       }
     },
@@ -140,7 +138,6 @@ exports.findMinhasDoacoesFinalizadasService = async (ongId) => {
         select: {
           nome:     true,
           logo_url: true,
-          site:     true
         }
       }
     },
@@ -181,7 +178,6 @@ exports.findByIdDoacaoService = async (id) => {
         select: {
           nome: true,
           logo_url: true,
-          site: true
         }
       }
     }
@@ -257,18 +253,18 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
     throw new Error('Você não tem permissão para modificar esta doação');
   }
 
-  let prazoNecessidade = null;
+  let prazoNecessidade;
 
-  // Converte dias_validade (string) para número e calcula a nova data
-  const diasValidade = doacaoData.dias_validade
-    ? parseInt(doacaoData.dias_validade, 10)
-    : null;
-
-  if (diasValidade && diasValidade > 0) {
+  if (doacaoData.dias_validade && parseInt(doacaoData.dias_validade, 10) > 0) {
+    const diasValidade = parseInt(doacaoData.dias_validade, 10);
     const dataFinal = new Date();
     dataFinal.setDate(dataFinal.getDate() + diasValidade);
-    dataFinal.setHours(23, 59, 59, 999); // fim do dia
-    prazoNecessidade = dataFinal.toISOString();
+    dataFinal.setHours(23, 59, 59, 999);
+    prazoNecessidade = dataFinal.toISOString(); // <-- ISO completo
+  } else if (doacaoData.prazo_necessidade) {
+    prazoNecessidade = new Date(doacaoData.prazo_necessidade).toISOString(); // <-- ISO completo
+  } else {
+    prazoNecessidade = doacao.prazo_necessidade;
   }
 
   // Converte quantidade se vier definida

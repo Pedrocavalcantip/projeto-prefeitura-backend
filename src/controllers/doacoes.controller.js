@@ -146,12 +146,33 @@ exports.update = async (req, res) => {
     return res.status(200).json(atualizada);
   } catch (error) {
     console.error('update:', error);
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
+
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+        error.message.includes('válidas') ||
+        error.message.includes('válido') ||
+        error.message.includes('deve conter apenas') ||
+        error.message.includes('obrigatório') ||
+        error.message.includes('inválido') ||
+        error.message.includes('não pode ser vazio') ||
+        error.message.includes('maior que zero.') ||
+        error.message.includes('O campo urgencia deve') ||
+        error.message.includes('O campo url_imagem deve conter uma URL válida.')
+    ) {
+        return res.status(400).json({ message: error.message });
     }
+
+    // Erro de permissão
     if (error.message.includes('permissão')) {
-      return res.status(403).json({ message: error.message });
+        return res.status(403).json({ message: error.message });
     }
+
+    // Erro de não encontrado
+    if (error.message.includes('não encontrada')) {
+        return res.status(404).json({ message: error.message });
+    }
+
+    // Qualquer outro erro
     return res.status(500).json({ message: 'Erro interno ao atualizar doação.' });
   }
 };

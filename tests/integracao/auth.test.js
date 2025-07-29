@@ -105,4 +105,21 @@ describe ('Autentificação - /auth/protegida', () => {
     expect(res.statusCode).toBe(401);
     expect(res.body).toHaveProperty('message', 'Formato do token inválido');
     });
+
+    it('retorna 500 se ocorrer um erro inesperado no login', async () => {
+    // Mock do método jwt.sign para lançar erro
+    const originalSign = jwt.sign;
+    jwt.sign = () => { throw new Error('Erro interno simulado'); };
+
+    const response = await request(app)
+        .post('/auth/login')
+        .send({ email_ong: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.body).toHaveProperty('erro');
+    expect(response.body.erro).toMatch(/erro interno no servidor/i);
+
+    // Restaura o método original
+    jwt.sign = originalSign;
+});
 });

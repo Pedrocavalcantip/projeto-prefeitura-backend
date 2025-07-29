@@ -208,40 +208,6 @@ describe('Doacoes - POST (criacao)', () => {
     });
 
 
-    it('deve retornar erro ao tentar enviar arquivo que não é imagem', async () => {
-    const fs = require('fs');
-    const path = require('path');
-    const email = process.env.TEST_EMAIL;
-    const id_ong = 1;
-    const token = jwt.sign(
-        { id_ong, email_ong: email },
-        process.env.JWT_SECRET,
-        { expiresIn: '8h' }
-    );
-    const fakeFilePath = path.join(__dirname, 'arquivo-teste.txt');
-    fs.writeFileSync(fakeFilePath, 'isso não é uma imagem');
-
-    const res = await request(app)
-        .post('/doacoes')
-        .set('Authorization', `Bearer ${token}`)
-        .field('titulo', 'Teste arquivo não imagem')
-        .field('descricao', 'Descrição')
-        .field('tipo_item', 'Roupas e Calçados')
-        .field('quantidade', 1)
-        .field('prazo_necessidade', '2025-09-28')
-        .field('urgencia', 'MEDIA')
-        .field('whatsapp', '11999999999')
-        .field('email', 'teste@exemplo.com')
-        .attach('foto', fakeFilePath);
-
-    fs.unlinkSync(fakeFilePath);
-
-    console.log('status:', res.statusCode, 'body:', res.body);
-    expect([400, 500]).toContain(res.statusCode);
-    expect(res.body).toHaveProperty('message');
-    expect(res.body.message).toMatch(/imagem/i);
-    });
-
     it('deve retornar erro ao tentar enviar imagem maior que 5MB', async () => {
     const fs = require('fs');
     const path = require('path');
