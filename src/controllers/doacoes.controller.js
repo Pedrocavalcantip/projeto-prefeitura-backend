@@ -250,8 +250,6 @@ exports.deleteDoacao = async (req, res) => {
 
 
 //clean up
-
-
 // Finalizar doações expiradas
 exports.finalizarExpiradas = async (req, res) => {
   try {

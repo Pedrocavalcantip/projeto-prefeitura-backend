@@ -4,6 +4,12 @@ const jwt = require('jsonwebtoken');
 const app = require('../../index'); 
 
 describe ('Doações -GET publico', () => {
+    it('GET / deve retornar mensagem de status do servidor', async () => {
+        const res = await request(app).get('/');
+        expect(res.statusCode).toBe(200);
+        expect(res.text).toBe('Servidor do Hub de Doações está no ar!');
+    });
+    
     it (' deve retornar lista de doacoes ativas (sem o token)', async () => {
         const response = await request(app).get('/doacoes');
         expect(response.statusCode).toBe(200);
