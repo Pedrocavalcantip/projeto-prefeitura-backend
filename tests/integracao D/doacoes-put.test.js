@@ -5,14 +5,30 @@ const app = require('../../index');
 describe('Doações - PUT (atualização)', () => {
     let token;
     let tokenOutraOng;
-    const doacaoId = 30; // Usando produto já existente no banco
+    let doacaoId;
 
     beforeAll(async () => {
         // Token da ONG principal
         const login = await request(app)
-            .post('/auth/login')
-            .send({ email_ong: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
+          .post('/auth/login')
+          .send({ email_ong: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
         token = login.body.token;
+
+        const doacaoCriada = await request(app)
+          .post('/doacoes')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            titulo: 'Doação para PUT',
+            descricao: 'Teste PUT',
+            tipo_item: 'Roupas e Calçados',
+            quantidade: 1,
+            prazo_necessidade: '2025-12-31',
+            url_imagem: 'https://exemplo.com/imagem.jpg',
+            urgencia: 'MEDIA',
+            whatsapp: '11999999999',
+            email: 'teste@exemplo.com'
+        });
+      doacaoId = doacaoCriada.body.id_produto;
 
         // Simular token de outra ONG (para teste 403)
         tokenOutraOng = jwt.sign(

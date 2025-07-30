@@ -1,3 +1,7 @@
+const request = require('supertest');
+const jwt = require('jsonwebtoken');
+const app = require('../../index');
+
 // atualizacao de status PATCH
 describe ('Doações - PATCH (atualização de status)', () => {
     let token;
@@ -5,31 +9,36 @@ describe ('Doações - PATCH (atualização de status)', () => {
     let tokenOutraOng;
 
     beforeAll(async () => {
-        const login = await request(app)
-            .post('/auth/login')
-            .send({ email: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
-        token = login.body.token;
+        // Gere um id_ong único para a ONG dona
+        const idOngDona = Math.floor(Math.random() * 1000000) + 1000;
+        const emailOngDona = `ong${Date.now()}@teste.com`;
 
-        // Simular token de outra ONG (para teste 403)
+        // Token da ONG dona (usado para criar e atualizar a doação)
+        token = jwt.sign(
+            { id_ong: idOngDona, email_ong: emailOngDona },
+            process.env.JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        // Token de outra ONG (para testar permissão)
         tokenOutraOng = jwt.sign(
-            { id_ong: 999, email: 'outra@ong.com' }, 
-            process.env.JWT_SECRET, 
+            { id_ong: idOngDona + 1, email_ong: `outra${Date.now()}@ong.com` },
+            process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // Criar uma doação para testar a mudança de status
+        // Cria uma doação única para os testes
         const novaDoacao = {
-            titulo: 'Doação para status',
+            titulo: `Doação para status ${Date.now()}`,
             descricao: 'Teste de status',
             tipo_item: 'Itens Pet',
             quantidade: 3,
-            prazo_necessidade: '2023-12-31',
+            prazo_necessidade: '2025-12-31',
             url_imagem: 'https://exemplo.com/imagem.jpg',
             urgencia: 'MEDIA',
             whatsapp: '11999999999',
-            email: 'teste@exemplo.com'
+            email: emailOngDona // pode ser qualquer email, mas use o mesmo do token para clareza
         };
-        // Criar a doação e obter o ID
         const response = await request(app)
             .post('/doacoes')
             .set('Authorization', `Bearer ${token}`)
@@ -38,12 +47,13 @@ describe ('Doações - PATCH (atualização de status)', () => {
     });
     
     //operacao correta 
-    it('deve atualizar status da doação', async () => {
+    it.only('deve atualizar status da doação', async () => {
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
 
+        console.log(response.body);
         expect(response.statusCode).toBe(200);
         expect(response.body.status).toBe('FINALIZADA');
     });
@@ -64,7 +74,6 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${tokenOutraOng}`)
             .send({ status: 'ATIVA' });
-
         expect(response.statusCode).toBe(403);
         expect(response.body.message).toContain('Você não tem permissão para modificar esta doação');
     });
@@ -123,16 +132,15 @@ describe ('Doações - PATCH (atualização de status)', () => {
     });
 
     it('não deve permitir alterar para o mesmo status atual', async () => {
-        // Primeiro, garantir que está FINALIZADA
         await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
-        // Tentar alterar para FINALIZADA novamente
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
+        console.log(response.body);
         expect(response.statusCode).toBe(400);
         expect(response.body.message).toContain('Só é possível atualizar o status se a doação estiver ATIVA');
     });
@@ -148,11 +156,12 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'ATIVA' });
+        console.log(response.body);
         expect(response.statusCode).toBe(400);
         expect(response.body.message).toContain('Só é possível atualizar o status se a doação estiver ATIVA');
     });
 
-    it('deve aceitar apenas valores permitidos para status', async () => {
+    it.only('deve aceitar apenas valores permitidos para status', async () => {
         // Testar apenas os valores permitidos
         for (const status of ['ATIVA', 'FINALIZADA']) {
             const res = await request(app)
@@ -160,6 +169,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
                 .set('Authorization', `Bearer ${token}`)
                 .send({ status });
             // Aceita 200 ou 400 se já estiver FINALIZADA
+            console.log(`Status: ${status}, Response: ${res.statusCode}`);
             expect([200,400]).toContain(res.statusCode);
         }
     });
@@ -190,7 +200,7 @@ describe('Doações - DELETE (exclusão)', () => {
             descricao: 'Teste de exclusão bem-sucedida',
             tipo_item: 'Saúde e Higiene',
             quantidade: 1,
-            prazo_necessidade: '2023-12-31',
+            prazo_necessidade: '2025-12-31',
             url_imagem: 'https://exemplo.com/imagem.jpg',
             urgencia: 'MEDIA',
             whatsapp: '11999999999',
@@ -221,7 +231,7 @@ describe('Doações - DELETE (exclusão)', () => {
             descricao: 'Teste exclusão sem token',
             tipo_item: 'Materiais Educativos e Culturais',
             quantidade: 1,
-            prazo_necessidade: '2023-12-31',
+            prazo_necessidade: '2025-12-31',
             url_imagem: 'https://exemplo.com/imagem.jpg',
             urgencia: 'MEDIA',
             whatsapp: '11999999999',
@@ -247,7 +257,7 @@ describe('Doações - DELETE (exclusão)', () => {
             descricao: 'Teste exclusão por outra ONG',
             tipo_item: 'Eletrônicos',
             quantidade: 1,
-            prazo_necessidade: '2023-12-31',
+            prazo_necessidade: '2025-12-31',
             url_imagem: 'https://exemplo.com/imagem.jpg',
             urgencia: 'MEDIA',
             whatsapp: '11999999999',

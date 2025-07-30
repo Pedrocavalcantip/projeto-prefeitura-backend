@@ -72,7 +72,6 @@ exports.findMinhasAtivas = async (req, res) => {
     const lista = await doacoesService.findMinhasDoacoesAtivasService(ongId);
     return res.status(200).json(lista);
   } catch (error) {
-    console.error('findMinhasAtivas:', error);
     return res.status(500).json({ message: 'Erro interno ao listar doações ativas.' });
   }
 };
@@ -198,6 +197,12 @@ exports.updateStatus = async (req, res) => {
     }
 
     const doacaoAtual = await doacoesService.findByIdDoacaoService(idNum);
+    console.log('ong_id da doação:', doacaoAtual.ong_id, 'ongId do token:', ongId);
+
+    if (doacaoAtual.ong_id !== ongId) {
+      return res.status(403).json({ message: 'Você não tem permissão para modificar esta doação.' });
+    }
+
     if (doacaoAtual.status === status) {
       return res.status(400).json({ message: `A doação já está com o status '${status}'.` });
     }

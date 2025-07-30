@@ -2,7 +2,7 @@
 const jwt = require('jsonwebtoken');
 jest.mock('jsonwebtoken');
 
-const authMiddleware = require('../src/middlewares/authMiddleware');
+const authMiddleware = require('../../src/middlewares/authMiddleware');
 
 describe('Auth Middleware', () => {
   let req;

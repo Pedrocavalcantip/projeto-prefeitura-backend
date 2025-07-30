@@ -1,5 +1,5 @@
 // tests/uploadMiddleware.test.js
-const upload = require('../src/middlewares/upload.middleware');
+const upload = require('../../src/middlewares/upload.middleware');
 
 describe('Upload Middleware (multer)', () => {
   it('→ deve limitar tamanho de arquivo a 5MB', () => {
