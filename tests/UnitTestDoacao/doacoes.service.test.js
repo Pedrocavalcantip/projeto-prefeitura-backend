@@ -1,7 +1,7 @@
 // tests/doacoes.service.test.js
 
 const prisma = require('../../src/config/database');
-jest.mock('../src/config/database', () => ({
+jest.mock('../../src/config/database', () => ({
   produtos: {
     findMany:    jest.fn(),
     findUnique:  jest.fn(),
@@ -14,7 +14,7 @@ jest.mock('../src/config/database', () => ({
 }));
 
 const { validarDoacao } = require('../../src/services/validacao.service');
-jest.mock('../src/services/validacao.service', () => ({
+jest.mock('../../src/services/validacao.service', () => ({
   validarDoacao: jest.fn(),
 }));
 

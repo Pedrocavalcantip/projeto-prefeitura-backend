@@ -21,7 +21,7 @@ function verificarToken(req, res, next) {
 
 
     // Adiciona os dados do token à requisição para uso posterior
-    req.email_ong = decoded.email_ong;
+    req._ong = decoded.email_ong;
     req.id_ong = decoded.id_ong;
 
     next();

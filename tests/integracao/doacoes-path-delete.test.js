@@ -9,45 +9,40 @@ describe ('Doações - PATCH (atualização de status)', () => {
     let tokenOutraOng;
 
     beforeAll(async () => {
-        // Gere um id_ong único para a ONG dona
-        const idOngDona = Math.floor(Math.random() * 1000000) + 1000;
-        const emailOngDona = `ong${Date.now()}@teste.com`;
+        // Token da ONG principal
+        const login = await request(app)
+          .post('/auth/login')
+          .send({ email_ong: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
+        token = login.body.token;
 
-        // Token da ONG dona (usado para criar e atualizar a doação)
-        token = jwt.sign(
-            { id_ong: idOngDona, email_ong: emailOngDona },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        );
-
-        // Token de outra ONG (para testar permissão)
-        tokenOutraOng = jwt.sign(
-            { id_ong: idOngDona + 1, email_ong: `outra${Date.now()}@ong.com` },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-
-        // Cria uma doação única para os testes
-        const novaDoacao = {
-            titulo: `Doação para status ${Date.now()}`,
-            descricao: 'Teste de status',
-            tipo_item: 'Itens Pet',
-            quantidade: 3,
+        const doacaoCriada = await request(app)
+          .post('/doacoes')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            titulo: 'Doação para PUT',
+            descricao: 'Teste PUT',
+            tipo_item: 'Roupas e Calçados',
+            quantidade: 1,
             prazo_necessidade: '2025-12-31',
             url_imagem: 'https://exemplo.com/imagem.jpg',
             urgencia: 'MEDIA',
             whatsapp: '11999999999',
-            email: emailOngDona // pode ser qualquer email, mas use o mesmo do token para clareza
-        };
-        const response = await request(app)
-            .post('/doacoes')
-            .set('Authorization', `Bearer ${token}`)
-            .send(novaDoacao);
-        doacaoId = response.body.id_produto;
+            email: 'teste@exemplo.com'
+        });
+      doacaoId = doacaoCriada.body.id_produto;
+
+        // Simular token de outra ONG (para teste 403)
+        tokenOutraOng = jwt.sign(
+            { id_ong: 999, email: 'outra@ong.com' }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '8h' }
+        );
     });
     
-    //operacao correta 
-    it.only('deve atualizar status da doação', async () => {
+    //operacao correta
+     
+    it('deve atualizar status da doação', async () => {
+        console.log('doacaoId:', doacaoId); // <-- log separado
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${token}`)
@@ -58,12 +53,35 @@ describe ('Doações - PATCH (atualização de status)', () => {
         expect(response.body.status).toBe('FINALIZADA');
     });
 
+    it('deve retornar erro 401 se o token for inválido', async () => {
+        const response = await request(app)
+            .patch(`/doacoes/${doacaoId}/status`)
+            .set('Authorization', 'Bearer token_invalido')
+            .send({ status: 'FINALIZADA' });
+        expect(response.statusCode).toBe(401);
+        expect(response.body.message).toBeDefined();
+    });
+
+    it('deve retornar erro 401 se o token estiver expirado', async () => {
+        const expiredToken = jwt.sign(
+            { id_ong: 1, email_ong: 'teste@exemplo.com' },
+            process.env.JWT_SECRET,
+            { expiresIn: '-1h' }
+        );
+        const response = await request(app)
+            .patch(`/doacoes/${doacaoId}/status`)
+            .set('Authorization', `Bearer ${expiredToken}`)
+            .send({ status: 'FINALIZADA' });
+        expect(response.statusCode).toBe(401);
+        expect(response.body.message).toBeDefined();
+    });
+
     // Teste para erro 401
     it('deve retornar erro 401 ao tentar atualizar status sem token', async () => {
         const response = await request(app)
             .patch(`/doacoes/${doacaoId}/status`)
             .send({ status: 'FINALIZADA' });
-
+        console.log('Response sem token:', response.body);
         expect(response.statusCode).toBe(401);
         expect(response.body).toHaveProperty('message');
     });
@@ -74,6 +92,8 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .patch(`/doacoes/${doacaoId}/status`)
             .set('Authorization', `Bearer ${tokenOutraOng}`)
             .send({ status: 'ATIVA' });
+
+        console.log('Response com token de outra ONG:', response.body);
         expect(response.statusCode).toBe(403);
         expect(response.body.message).toContain('Você não tem permissão para modificar esta doação');
     });
@@ -85,6 +105,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
 
+        console.log('Response com ID inexistente:', response.body);
         expect(response.statusCode).toBe(404);
         expect(response.body).toHaveProperty('message');
     });
@@ -95,6 +116,8 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .patch('/doacoes/abc/status')
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
+        
+        console.log('Response com ID não numérico:', response.body);
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty('message');
         expect(response.body.message).toContain('ID deve ser um número válido maior que zero');
@@ -105,6 +128,8 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .patch('/doacoes/0/status')
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
+        
+        console.log('Response com ID zero:', response.body);
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty('message');
         expect(response.body.message).toContain('ID deve ser um número válido maior que zero');
@@ -115,6 +140,8 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .patch('/doacoes/-5/status')
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'FINALIZADA' });
+        
+        console.log('Response com ID negativo:', response.body);
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty('message');
         expect(response.body.message).toContain('ID deve ser um número válido maior que zero');
@@ -127,6 +154,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({ status: 'STATUS_INVALIDO' });
 
+        console.log('Response com status inválido:', response.body);
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty('message');
     });
@@ -142,7 +170,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
             .send({ status: 'FINALIZADA' });
         console.log(response.body);
         expect(response.statusCode).toBe(400);
-        expect(response.body.message).toContain('Só é possível atualizar o status se a doação estiver ATIVA');
+        expect(response.body.message).toContain(`A doação já está com o status 'FINALIZADA'.`);
     });
 
     it('não deve permitir alterar status se já estiver FINALIZADA', async () => {
@@ -161,7 +189,7 @@ describe ('Doações - PATCH (atualização de status)', () => {
         expect(response.body.message).toContain('Só é possível atualizar o status se a doação estiver ATIVA');
     });
 
-    it.only('deve aceitar apenas valores permitidos para status', async () => {
+    it('deve aceitar apenas valores permitidos para status', async () => {
         // Testar apenas os valores permitidos
         for (const status of ['ATIVA', 'FINALIZADA']) {
             const res = await request(app)
@@ -176,18 +204,18 @@ describe ('Doações - PATCH (atualização de status)', () => {
 });
 
 // Deletar doação
-describe('Doações - DELETE (exclusão)', () => {
+describe ('Doações - DELETE (exclusão)', () => {
     let token;
     let tokenOutraOng;
 
     beforeAll(async () => {
         const login = await request(app)
             .post('/auth/login')
-            .send({ email: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
+            .send({ email_ong: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD });
         token = login.body.token;
 
         tokenOutraOng = jwt.sign(
-            { id_ong: 999, email: 'outra@ong.com' }, 
+            { id_ong: 999, email_ong: 'outra@ong.com' }, 
             process.env.JWT_SECRET, 
             { expiresIn: '1h' }
         );
@@ -211,6 +239,7 @@ describe('Doações - DELETE (exclusão)', () => {
             .set('Authorization', `Bearer ${token}`)
             .send(novaDoacao);
 
+        console.log('Token usado no DELETE:', token)
         const response = await request(app)
             .delete(`/doacoes/${criacaoResponse.body.id_produto}`)
             .set('Authorization', `Bearer ${token}`);

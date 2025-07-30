@@ -174,6 +174,7 @@ exports.findByIdDoacaoService = async (id) => {
       criado_em: true,
       whatsapp: true,
       email: true,
+      ong_id: true, 
       ong: {
         select: {
           nome: true,
@@ -288,7 +289,7 @@ exports.updateDoacaoService = async (id, doacaoData, ongId) => {
   });
 };
 
-// Nova função: Atualizar apenas o status
+// Atualizar apenas o status
 exports.updateStatusDoacaoService = async (id, newStatus, ongId) => {
   const idNumerico = parseInt(id);
   

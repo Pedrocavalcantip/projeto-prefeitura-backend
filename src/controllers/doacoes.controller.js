@@ -112,6 +112,11 @@ exports.create = async (req, res) => {
     return res.status(201).json(criada);
   } catch (error) {
     console.error('create:', error); 
+    if (
+      error.message.includes('erro interno')
+    ) {
+      return res.status(500).json({ message: 'Erro interno ao criar doação.' });
+    }
     return res.status(400).json({ message: error.message });
   }
 };
@@ -207,7 +212,7 @@ exports.updateStatus = async (req, res) => {
       return res.status(400).json({ message: `A doação já está com o status '${status}'.` });
     }
     if (doacaoAtual.status === 'FINALIZADA') {
-      return res.status(400).json({ message: 'Doação FINALIZADA não pode ser modificada.' });
+      return res.status(400).json({ message: 'Só é possível atualizar o status se a doação estiver ATIVA.' });
     }
 
     const atualizada = await doacoesService.updateStatusDoacaoService(idNum, status, ongId);
@@ -228,6 +233,7 @@ exports.updateStatus = async (req, res) => {
 exports.deleteDoacao = async (req, res) => {
   try {
     const tokenInfo = validateToken(req.headers.authorization);
+    console.log('Token info:', tokenInfo);
     if (!tokenInfo.valid) {
       return res.status(401).json({ message: tokenInfo.error });
     }
