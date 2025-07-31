@@ -313,8 +313,9 @@ describe('Doacoes - POST (criacao)', () => {
         .post('/doacoes')
         .set('Authorization', `Bearer ${token}`)
         .send(doacaoData);
-
+    console.log('Resposta do teste de data passada:', res.body);
     expect(res.statusCode).toBe(400);
     expect(res.body.message).toMatch(/prazo|data/i);
+    expect(res.body.message).toContain('O campo prazo_necessidade não pode ser uma data no passado.');
     });
 });

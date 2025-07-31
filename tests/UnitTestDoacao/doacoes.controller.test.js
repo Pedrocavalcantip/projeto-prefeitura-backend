@@ -86,7 +86,7 @@ describe('🗂️  Controller de Doações', () => {
       expect(res.body).toEqual({ id_produto: 123 });
     });
 
-    it('→ 500 se o service falhar internamente', async () => {
+    it ('→ 500 se o service falhar internamente', async () => {
       validateToken.mockReturnValue({ valid: true, decoded: { id_ong: 1 } });
       getImageData.mockReturnValue({ url: 'http://img.jpg' });
       doacoesService.createDoacaoService.mockRejectedValue(new Error('Erro X'));
