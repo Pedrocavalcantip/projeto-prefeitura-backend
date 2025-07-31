@@ -1,33 +1,24 @@
 const cron = require('node-cron');
-const {
-  finalizarRealocacoesAntigas,
-  limparRealocacoesExpiradas
-} = require('../services/realocacoes.service.js');
+const { finalizarRealocacoesAntigas, limparRealocacoesExpiradas } = require('../services/realocacoes.service.js');
 
 console.log('⏰ Agendador de realocações iniciado!');
 
-// 1) Finaliza realocações ATIVAS com mais de 60 dias, todo dia às 03:00
-cron.schedule('0 3 * * *', async () => {
+// Função exportada para ser testada diretamente
+async function realocacoesJobFn() {
   try {
-    console.log('🔔 [Job] Finalizando realocações antigas (60+ dias)…');
-    const resultado = await finalizarRealocacoesAntigas(true);
-    console.log(`   → Finalizadas: ${resultado.count || resultado.length}`);
-    console.log('🏁 Finalização de realocações concluída.');
-  } catch (err) {
-    console.error('❌ Erro no job de finalização de realocações:', err);
-  }
-});
+    console.log('🔔 Job agendado: Finalizando realocações antigas...');
+    await finalizarRealocacoesAntigas(true);
 
-// 2) Exclui realocações FINALIZADAS há mais de 6 meses, todo dia às 04:00
-cron.schedule('0 4 * * *', async () => {
-  try {
-    console.log('🔔 [Job] Excluindo realocações finalizadas há +6 meses…');
-    const { totalExcluidas } = await limparRealocacoesExpiradas(true);
-    console.log(`   → Excluídas: ${totalExcluidas}`);
-    console.log('🏁 Exclusão de realocações concluída.');
-  } catch (err) {
-    console.error('❌ Erro no job de exclusão de realocações:', err);
-  }
-});
+    console.log('🧹 Job agendado: Limpando realocações expiradas...');
+    await limparRealocacoesExpiradas(true);
 
-module.exports = cron;
+    console.log('🏁 Limpeza automática de realocações finalizada!');
+  } catch (error) {
+    console.error('❌ Erro ao executar o job automático de realocações:', error);
+  }
+}
+
+// Executa diariamente às 03:00 da manhã (horário do servidor)
+cron.schedule('0 3 * * *', realocacoesJobFn);
+
+module.exports = { realocacoesJobFn };

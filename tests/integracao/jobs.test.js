@@ -28,4 +28,38 @@ describe('Job de doações agendado', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Erro ao executar o job automático de doações:', error);
     consoleErrorSpy.mockRestore();
   });
+
+  jest.mock('../../src/services/realocacoes.service.js', () => ({
+    finalizarRealocacoesAntigas: jest.fn(),
+    limparRealocacoesExpiradas: jest.fn(),
+    }));
+
+    const {
+    finalizarRealocacoesAntigas,
+    limparRealocacoesExpiradas,
+    } = require('../../src/services/realocacoes.service.js');
+    const { realocacoesJobFn } = require('../../src/jobs/realocacoesJob.js');
+
+    describe('Job de realocações agendado', () => {
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+    
+    it('deve chamar os serviços de finalizar e limpar realocações ao executar o job', async () => {
+        await realocacoesJobFn();
+        expect(finalizarRealocacoesAntigas).toHaveBeenCalledWith(true);
+        expect(limparRealocacoesExpiradas).toHaveBeenCalledWith(true);
+    });
+
+    it('deve chamar console.error se ocorrer um erro no job', async () => {
+        const error = new Error('Erro simulado');
+        finalizarRealocacoesAntigas.mockImplementationOnce(() => { throw error; });
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        await realocacoesJobFn();
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Erro ao executar o job automático de realocações:', error);
+        consoleErrorSpy.mockRestore();
+    });
+    });
 });
