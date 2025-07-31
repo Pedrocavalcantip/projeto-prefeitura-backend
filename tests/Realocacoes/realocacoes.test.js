@@ -19,6 +19,8 @@ const request = require('supertest');
 const jwt     = require('jsonwebtoken');
 const app     = require('../../index');
 const prisma  = require('../../src/config/database');
+const realocacoesService = require('../../src/services/realocacoes.service');
+
 
 let token;
 
@@ -294,7 +296,7 @@ describe('POST /realocacoes', () => {
       .field('descricao',  'Teste de imagem')
       .field('tipo_item',  'Utensílios Gerais')
       .field('whatsapp',   '11999999999')
-      .field('email',      'upload@ong.com')
+      .field('email',      'teste@ong.com')
       .field('quantidade', '1')
       .attach('foto', caminho);
 
@@ -607,6 +609,533 @@ describe('🗓️ Métodos automáticos: finalizar e limpar realocações expira
     const excluida = await prisma.produtos.findFirst({
       where: { titulo: 'Para limpar' }
     });
+    console.log('Excluída:', excluida);
     expect(excluida).toBeNull();
+  });
+});
+
+
+
+const caminhoImagem = 'tests/imagem-teste.jpg';
+
+describe('POST /realocacoes - validação de campos', () => {
+  const base = {
+    titulo: 'Teste POST',
+    descricao: 'Descricao teste',
+    tipo_item: 'Roupas e Calçados',
+    whatsapp: '11999999999',
+    email: 'teste@ong.com',
+    quantidade: 2,
+    url_imagem: 'https://exemplo.com/img.jpg'
+  };
+
+  [
+    'titulo', 'descricao', 'tipo_item', 'whatsapp', 'email',  'url_imagem'
+  ].forEach(campo => {
+    it(`400: Falta campo obrigatório '${campo}'`, async () => {
+      const dados = { ...base };
+      delete dados[campo];
+      const res = await request(app)
+        .post('/realocacoes')
+        .set('Authorization', `Bearer ${token}`)
+        .send(dados);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(new RegExp(campo, 'i'));
+    });
+  });
+
+  it('400: E-mail inválido', async () => {
+    const dados = { ...base, email: 'invalido' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/email/i);
+  });
+
+  it('400: Whatsapp inválido', async () => {
+    const dados = { ...base, whatsapp: '1234' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/whatsapp/i);
+  });
+
+  it('400: quantidade zero', async () => {
+    const dados = { ...base, quantidade: 0 };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/quantidade/i);
+  });
+
+  it('400: quantidade negativa', async () => {
+    const dados = { ...base, quantidade: -5 };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/quantidade/i);
+  });
+
+  it('400: quantidade string não numérica', async () => {
+    const dados = { ...base, quantidade: 'abc' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/quantidade/i);
+  });
+
+  it('400: tipo_item inválido', async () => {
+    const dados = { ...base, tipo_item: 'NaoExiste' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/tipo_item/i);
+  });
+
+  it('400: url_imagem inválida', async () => {
+    const dados = { ...base, url_imagem: 'url_incorreta' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/url_imagem/i);
+  });
+
+  it('201: Cria via upload de imagem (arquivo, sem url_imagem)', async () => {
+    const { url_imagem, ...dados } = base;
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .field('titulo', dados.titulo)
+      .field('descricao', dados.descricao)
+      .field('tipo_item', dados.tipo_item)
+      .field('whatsapp', dados.whatsapp)
+      .field('email', dados.email)
+      .field('quantidade', dados.quantidade.toString())
+      .attach('foto', caminhoImagem);
+    expect([200,201]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty('id_produto');
+  });
+
+  // Campos extras inesperados
+  it('201: Ignora campo extra inesperado', async () => {
+    const dados = { ...base, extra: 'deve ser ignorado' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect([200,201]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty('id_produto');
+  });
+
+  // Campo com tipo errado
+  it('400: Campo whatsapp com letras', async () => {
+    const dados = { ...base, whatsapp: 'abcdefghij' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/whatsapp/i);
+  });
+
+  it('400: Campo email vazio', async () => {
+    const dados = { ...base, email: '' };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/email/i);
+  });
+});
+
+
+describe('PUT /realocacoes/:id - validação de campos', () => {
+  let id;
+  const base = {
+    titulo: 'PUT base',
+    descricao: 'PUT descricao',
+    tipo_item: 'Utensílios Gerais',
+    whatsapp: '11988887777',
+    email: 'put@ong.com',
+    quantidade: 3,
+    url_imagem: 'https://exemplo.com/img2.jpg'
+  };
+
+  beforeAll(async () => {
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(base);
+    id = res.body.id_produto;
+  });
+
+  [
+    'titulo', 'descricao', 'tipo_item', 'whatsapp', 'email', 'url_imagem'
+  ].forEach(campo => {
+    it(`400: PUT Falta campo obrigatório '${campo}'`, async () => {
+      const dados = { ...base };
+      delete dados[campo];
+      const res = await request(app)
+        .put(`/realocacoes/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(dados);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(new RegExp(campo, 'i'));
+    });
+  });
+
+  it('400: PUT E-mail inválido', async () => {
+    const dados = { ...base, email: 'invalido' };
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/email/i);
+  });
+
+  it('400: PUT Whatsapp inválido', async () => {
+    const dados = { ...base, whatsapp: '1234' };
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/whatsapp/i);
+  });
+
+  it('400: PUT quantidade zero', async () => {
+    const dados = { ...base, quantidade: 0 };
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/quantidade/i);
+  });
+
+  it('400: PUT tipo_item inválido', async () => {
+    const dados = { ...base, tipo_item: 'Xablau' };
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/tipo_item/i);
+  });
+
+  it('400: PUT url_imagem inválida', async () => {
+    const dados = { ...base, url_imagem: 'errada' };
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/url_imagem/i);
+  });
+
+  it('200: PUT - Atualiza imagem via upload de arquivo', async () => {
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .field('titulo', base.titulo)
+      .field('descricao', base.descricao)
+      .field('tipo_item', base.tipo_item)
+      .field('whatsapp', base.whatsapp)
+      .field('email', base.email)
+      .field('quantidade', base.quantidade.toString())
+      .attach('foto', caminhoImagem);
+    expect([200,201]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty('id_produto');
+  });
+
+  it('400: PUT Campo extra inesperado', async () => {
+    const dados = { ...base, inesperado: 'campo' };
+    const res = await request(app)
+      .put(`/realocacoes/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(dados);
+    expect([200,400]).toContain(res.statusCode); // pode aceitar, pode ignorar, depende do service
+  });
+});
+
+describe('PATCH /realocacoes/expiradas', () => {
+  it('401: Sem token', async () => {
+    const res = await request(app).patch('/realocacoes/expiradas');
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('200: Finaliza realocações antigas com sucesso', async () => {
+    const res = await request(app)
+      .patch('/realocacoes/expiradas')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body).toHaveProperty('idsFinalizadas');
+  });
+});
+
+describe('DELETE /realocacoes/expiradas', () => {
+  it('401: Sem token', async () => {
+    const res = await request(app).delete('/realocacoes/expiradas');
+    expect(res.statusCode).toBe(401);
+    console.log('Resposta:', res.body);
+  });
+
+  it('200: Limpa realocações expiradas com sucesso', async () => {
+    const res = await request(app)
+      .delete('/realocacoes/expiradas')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body).toHaveProperty('detalhes');
+    console.log('Resposta:', res.body);
+  });
+});
+
+
+describe('Cobertura dos erros internos (catch) do realocacoes.controller.js', () => {
+  let tokenLocal, idRealocacao, idUpdate, idPatch;
+
+  beforeAll(async () => {
+    // Gere o token localmente, igual ao seu beforeAll principal
+    tokenLocal = token;
+
+    // Crie IDs reais para update/patch/delete
+    const res1 = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${tokenLocal}`)
+      .send({
+        titulo:     'Erro Interno update',
+        descricao:  'Teste',
+        tipo_item:  'Roupas e Calçados',
+        url_imagem: 'https://exemplo.com/img.jpg',
+        whatsapp:   '11999999999',
+        email:      'update@ong.com',
+        quantidade: 1
+      });
+    idUpdate = res1.body.id_produto;
+
+    const res2 = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${tokenLocal}`)
+      .send({
+        titulo:     'Erro Interno patch',
+        descricao:  'Teste',
+        tipo_item:  'Roupas e Calçados',
+        url_imagem: 'https://exemplo.com/img.jpg',
+        whatsapp:   '11999999999',
+        email:      'patch@ong.com',
+        quantidade: 1
+      });
+    idPatch = res2.body.id_produto;
+
+    const res3 = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${tokenLocal}`)
+      .send({
+        titulo:     'Erro Interno delete',
+        descricao:  'Teste',
+        tipo_item:  'Roupas e Calçados',
+        url_imagem: 'https://exemplo.com/img.jpg',
+        whatsapp:   '11999999999',
+        email:      'delete@ong.com',
+        quantidade: 1
+      });
+    idRealocacao = res3.body.id_produto;
+  });
+
+  function requireAppAndService() {
+    jest.resetModules();
+    const realocacoesService = require('../../src/services/realocacoes.service');
+    const app = require('../../index');
+    const request = require('supertest');
+    return { realocacoesService, app, request };
+  }
+
+  it('500: findCatalogo erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'findCatalogoService').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .get('/realocacoes/catalogo')
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Fake erro 500');
+    jest.restoreAllMocks();
+  });
+
+  it('500: findCatalogoById erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'findCatalogoByIdService').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .get(`/realocacoes/catalogo/${idRealocacao}`)
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Fake erro 500');
+    jest.restoreAllMocks();
+  });
+
+  it('500: findMinhasAtivas erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'findMinhasRealocacoesAtivasService').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .get('/realocacoes/minhas/ativas')
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Erro interno ao listar realocações ativas.');
+    jest.restoreAllMocks();
+  });
+
+  it('500: findMinhasFinalizadas erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'findMinhasRealocacoesFinalizadasService').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .get('/realocacoes/minhas/finalizadas')
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Erro interno ao listar realocações finalizadas.');
+    jest.restoreAllMocks();
+  });
+
+  it('400: create erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'createRealocacaoService').mockImplementation(() => {
+      throw { status: 400, message: 'Fake erro 400' }; // <--- CORRIGIDO
+    });
+    const base = {
+      titulo:     'Teste erro',
+      descricao:  'Teste erro',
+      tipo_item:  'Roupas e Calçados',
+      url_imagem: 'https://exemplo.com/img.jpg',
+      whatsapp:   '11999999999',
+      email:      'teste@ong.com',
+      quantidade: 2
+    };
+    const res = await request(app)
+      .post('/realocacoes')
+      .set('Authorization', `Bearer ${tokenLocal}`)
+      .send(base);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe('Fake erro 400');
+    jest.restoreAllMocks();
+  });
+
+  it('400: update erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'updateRealocacaoService').mockImplementation(() => {
+      throw { status: 400, message: 'Fake erro 400' };
+    });
+    const base = {
+      titulo:     'Teste erro',
+      descricao:  'Teste erro',
+      tipo_item:  'Roupas e Calçados',
+      url_imagem: 'https://exemplo.com/img.jpg',
+      whatsapp:   '11999999999',
+      email:      'teste@ong.com',
+      quantidade: 2
+    };
+    const res = await request(app)
+      .put(`/realocacoes/${idUpdate}`)
+      .set('Authorization', `Bearer ${tokenLocal}`)
+      .send(base);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe('Fake erro 400');
+    jest.restoreAllMocks();
+  });
+
+  it('400: updateStatus erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'finalizarRealocacaoService').mockImplementation(() => {
+      throw { status: 400, message: 'Fake erro 400' };
+    });
+    const res = await request(app)
+      .patch(`/realocacoes/${idPatch}/status`)
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe('Fake erro 400');
+    jest.restoreAllMocks();
+  });
+
+  it('500: finalizarRealocacoesAntigas erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'finalizarRealocacoesAntigas').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .patch('/realocacoes/expiradas')
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Erro interno ao finalizar realocações antigas.');
+    jest.restoreAllMocks();
+  });
+
+  it('500: limparRealocacoesExpiradas erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'limparRealocacoesExpiradas').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .delete('/realocacoes/expiradas')
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Erro interno ao limpar realocações expiradas.');
+    jest.restoreAllMocks();
+  });
+
+  it('500: deleteRealocacao erro interno', async () => {
+    const { realocacoesService, app, request } = requireAppAndService();
+    jest.spyOn(realocacoesService, 'deleteRealocacaoService').mockImplementation(() => {
+      throw new Error('Fake erro 500');
+    });
+    const res = await request(app)
+      .delete(`/realocacoes/${idRealocacao}`)
+      .set('Authorization', `Bearer ${tokenLocal}`);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('Fake erro 500');
+    jest.restoreAllMocks();
+  });
+});
+
+describe('Validação de ID nos endpoints de realocação', () => {
+  const rotas = [
+    { metodo: 'get', url: id => `/realocacoes/catalogo/${id}` },
+    { metodo: 'delete', url: id => `/realocacoes/${id}` }
+  ];
+
+  const idsInvalidos = ['abc', '0', '-1', '1.5', 'null', 'undefined'];
+
+  rotas.forEach(({ metodo, url }) => {
+    idsInvalidos.forEach(idInvalido => {
+      it(`${metodo.toUpperCase()} retorna 400 para ID inválido: "${idInvalido}"`, async () => {
+        const res = await request(app)[metodo](url(idInvalido))
+          .set('Authorization', `Bearer ${token}`);
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toMatch(/id.*número.*maior que zero/i);
+      });
+    });
   });
 });

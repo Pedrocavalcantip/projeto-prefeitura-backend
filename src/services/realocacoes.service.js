@@ -47,15 +47,11 @@ exports.findCatalogoService = async (filtros = {}) => {
 
 // Buscar realocação específica por ID (Get /realocacoes/catalogo/:id)
 exports.findCatalogoByIdService = async (id) => {
-  const idNumerico = parseInt(id);
-
-  if (isNaN(idNumerico) || idNumerico <= 0) {
-    throw new Error('ID deve ser um número válido maior que zero');
-  }
+  
 
   const produto = await prisma.produtos.findFirst({
     where: {
-      id_produto: idNumerico,
+      id_produto: id,
       status: 'ATIVA',
       finalidade: 'REALOCACAO'
     },
@@ -67,6 +63,8 @@ exports.findCatalogoByIdService = async (id) => {
       quantidade: true,
       url_imagem: true,
       prazo_necessidade: true,
+      whatsapp: true,
+      email: true,
       ong: {
         select: {
           nome: true,
@@ -78,7 +76,7 @@ exports.findCatalogoByIdService = async (id) => {
 
 
   if (!produto) {
-    throw new Error('Realocação não encontrada');
+    throw { status: 404, message: 'Realocação não encontrada' };
   }
 
   return {
@@ -166,12 +164,9 @@ exports.createRealocacaoService = async (realocacaoData, ongId) => {
 
 // Atualizar realocação (PUT)
 exports.updateRealocacaoService = async (id, data, ongId) => {
-  const idNumerico = parseInt(id, 10);
-  if (isNaN(idNumerico) || idNumerico <= 0) {
-    throw { status: 400, message: 'ID deve ser um número válido maior que zero' };
-  }
+  
 
-  const realocacao = await prisma.produtos.findUnique({ where: { id_produto: idNumerico } });
+  const realocacao = await prisma.produtos.findUnique({ where: { id_produto: id } });
   if (!realocacao) throw { status: 404, message: 'Realocação não encontrada' };
   if (realocacao.ong_id !== ongId) throw { status: 403, message: 'Você não tem permissão para modificar esta realocação' };
 
@@ -179,7 +174,7 @@ exports.updateRealocacaoService = async (id, data, ongId) => {
 
 
   const atualizada = await prisma.produtos.update({
-    where: { id_produto: idNumerico },
+    where: { id_produto: id},
     data: {
       titulo: data.titulo,
       descricao: data.descricao,
@@ -197,17 +192,14 @@ exports.updateRealocacaoService = async (id, data, ongId) => {
 
 // Finalizar realocação (PATCH)
 exports.finalizarRealocacaoService = async (id, ongId) => {
-  const idNum = parseInt(id, 10);
-  if (isNaN(idNum) || idNum <= 0) {
-    throw { status: 400, message: 'ID deve ser um número válido maior que zero' };
-  }
+  
 
-  const produto = await prisma.produtos.findUnique({ where: { id_produto: idNum } });
+  const produto = await prisma.produtos.findUnique({ where: { id_produto: id} });
   if (!produto) throw { status: 404, message: 'Realocação não encontrada' };
   if (produto.ong_id !== ongId) throw { status: 403, message: 'Você não tem permissão para modificar esta realocação' };
 
   const atualizado = await prisma.produtos.update({
-    where: { id_produto: idNum },
+    where: { id_produto: id},
     data: {
       status: 'FINALIZADA',
       finalizado_em: new Date()
@@ -238,20 +230,15 @@ exports.finalizarRealocacoesAntigas = async () => {
 };
 // Deletar
 exports.deleteRealocacaoService = async (id, ongId) => {
-  const idNumerico = parseInt(id);
-  if (isNaN(idNumerico) || idNumerico <= 0) {
-    throw new Error('ID deve ser um número válido maior que zero');
-  }
-
+ 
   const realocacao = await prisma.produtos.findUnique({
-    where: { id_produto: idNumerico, finalidade: 'REALOCACAO' }
+    where: { id_produto: id, finalidade: 'REALOCACAO' }
   });
 
-  if (!realocacao) throw new Error('Realocação não encontrada');
-  if (realocacao.ong_id !== ongId) throw new Error('Você não tem permissão para deletar esta realocação');
-
+  if (!realocacao) throw { status: 404, message: 'Realocação não encontrada' };
+  if (realocacao.ong_id !== ongId) throw { status: 403, message: 'Você não tem permissão para deletar esta realocação' };
   return await prisma.produtos.delete({
-    where: { id_produto: idNumerico }
+    where: { id_produto: id }
   });
 };
 

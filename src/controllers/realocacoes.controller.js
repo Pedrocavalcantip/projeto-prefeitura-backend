@@ -78,11 +78,14 @@ exports.create = async (req, res) => {
   if (!tokenInfo.valid) {
     return res.status(401).json({ message: tokenInfo.error });
   }
-  const ongId = tokenInfo.decoded.id_ong;
 
+  const ongId = tokenInfo.decoded.id_ong;
   const imgData = getImageData(req);
+
   if (!imgData) {
-    return res.status(400).json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
+    return res.status(400).json({
+      message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.'
+    });
   }
 
   const dados = { ...req.body, url_imagem: imgData.url };
@@ -92,9 +95,13 @@ exports.create = async (req, res) => {
     return res.status(201).json(criada);
   } catch (error) {
     console.error('Erro ao criar realocação:', error);
-    return res.status(400).json({ message: error.message });
+    const status = error.status || 500;
+    return res.status(status).json({
+      message: error.message || 'Erro interno ao criar realocação.'
+    });
   }
 };
+
 
 
 // PUT /realocacoes/:id
@@ -116,7 +123,7 @@ exports.update = async (req, res) => {
     const atualizada = await realocacoesService.updateRealocacaoService(req.params.id, dados, ongId);
     return res.status(200).json(atualizada);
   } catch (error) {
-    const status = error.status || 400;
+    const status = error.status || 500;
     return res.status(status).json({ message: error.message || 'Erro ao atualizar realocação' });
   }
 };
@@ -134,10 +141,42 @@ exports.updateStatus = async (req, res) => {
     const finalizada = await realocacoesService.finalizarRealocacaoService(req.params.id, ongId);
     return res.status(200).json(finalizada);
   } catch (error) {
-    const status = error.status || 400;
+    const status = error.status || 500;
     return res.status(status).json({ message: error.message || 'Erro ao finalizar realocação' });
   }
 };
+
+// DELETE /realocacoes/:id
+exports.deleteRealocacao = async (req, res, next) => {
+  // If the client called DELETE /realocacoes/expiradas,
+  // we skip this handler and fall through to your cleanup route.
+  if (req.params.id === 'expiradas') {
+    return next();
+  }
+
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
+  const { id } = req.params;
+  if (isNaN(id) || parseInt(id, 10) <= 0) {
+    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+  }
+  try {
+    const ongId = tokenInfo.decoded.id_ong;
+    await realocacoesService.deleteRealocacaoService(id, ongId);
+    return res.status(204).send();
+  } catch (error) {
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 
 
 // PATCH /realocacoes/expiradas
@@ -173,36 +212,5 @@ exports.limparRealocacoesExpiradas = async (req, res) => {
   } catch (error) {
     console.error('Erro em limparRealocacoesExpiradas:', error);
     return res.status(500).json({ message: 'Erro interno ao limpar realocações expiradas.' });
-  }
-};
-
-// DELETE /realocacoes/:id
-exports.deleteRealocacao = async (req, res, next) => {
-  // If the client called DELETE /realocacoes/expiradas,
-  // we skip this handler and fall through to your cleanup route.
-  if (req.params.id === 'expiradas') {
-    return next();
-  }
-
-  const tokenInfo = validateToken(req.headers.authorization);
-  if (!tokenInfo.valid) {
-    return res.status(401).json({ message: tokenInfo.error });
-  }
-  const { id } = req.params;
-  if (isNaN(id) || parseInt(id, 10) <= 0) {
-    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-  }
-  try {
-    const ongId = tokenInfo.decoded.id_ong;
-    await realocacoesService.deleteRealocacaoService(id, ongId);
-    return res.status(204).send();
-  } catch (error) {
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes('permissão')) {
-      return res.status(403).json({ message: error.message });
-    }
-    return res.status(500).json({ message: error.message });
   }
 };
