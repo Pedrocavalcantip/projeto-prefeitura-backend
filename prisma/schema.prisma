@@ -10,14 +10,9 @@ datasource db {
 model ongs {
   id_ong                Int                   @id @default(autoincrement())
   nome                  String                @db.VarChar(100)
-  email                 String                @unique @db.VarChar(255)
-  whatsapp              String?               @db.VarChar(20)
-  instagram             String?               @db.VarChar(50)
-  facebook              String?               @db.VarChar(50)
-  site                  String?
-  logo_url              String?
+  email_ong             String                @unique @db.VarChar(255)
+  logo_url              String               @db.VarChar(255)
   produtos              produtos[]
-  realocacoes_iniciadas realocacoes_produto[]
 }
 
 model produtos {
@@ -25,39 +20,18 @@ model produtos {
   titulo              String                @db.VarChar(150)
   descricao           String
   tipo_item           String                @db.VarChar(50)
-  prazo_necessidade   DateTime?             @db.Date
-  url_imagem          String?
+  url_imagem          String
+  prazo_necessidade   DateTime              @db.Date
   criado_em           DateTime?             @default(now()) @db.Timestamp(6)
+  ong_id              Int
+  finalidade          FinalidadeProduto     @default(DOACAO)
+  quantidade          Int?                  @default(1)
   urgencia            NivelUrgencia         @default(MEDIA)
   status              StatusProduto         @default(ATIVA)
-  quantidade          Int                   @default(1)
-  finalidade          FinalidadeProduto     @default(DOACAO)
-  ong_id              Int
+  email               String                @db.VarChar(255)
+  whatsapp            String                @db.VarChar(20)
   ong                 ongs                  @relation(fields: [ong_id], references: [id_ong])
-  whatsapp            String?               @db.VarChar(20)
-  email               String?               @db.VarChar(255)            
-  realocacoes_produto realocacoes_produto[]
-
-  finalizado_em    DateTime?
-}
-
-model realocacoes_produto {
-  id_realocacao        Int       @id @default(autoincrement())
-  observacoes          String?
-  data_post            DateTime? @default(now()) @db.Timestamp(6)
-  quantidade_realocada Int
-  produto_id           Int
-  ong_origem_id        Int
-  ong_origem           ongs      @relation(fields: [ong_origem_id], references: [id_ong])
-  produto              produtos  @relation(fields: [produto_id], references: [id_produto])
-}
-
-model voluntarios {
-  id_voluntario   Int     @id @default(autoincrement())
-  nome            String  @db.VarChar(100)
-  email           String  @unique @db.VarChar(225)
-  whatsapp        String  @unique @db.VarChar(20)
-  receber_alertas Boolean @default(true)
+  finalizado_em       DateTime?             @db.Date
 }
 
 enum NivelUrgencia {

@@ -1,6 +1,6 @@
-const doacoesService = require('../services/doacoes.service');
-const { validateToken } = require('../utils/tokenUtils');
-const { getImageData } = require('../utils/imageUtils');
+const doacoesService = require('../services/doacoes.service.js');
+const { validateToken } = require('../utils/tokenUtils.js');
+const { getImageData } = require('../utils/imageUtils.js');
 
 // Listar todas as doações públicas (filtros opcionais)
 exports.findAll = async (req, res) => {
@@ -42,6 +42,24 @@ exports.findPrestesAVencer = async (req, res) => {
   }
 };
 
+// Buscar doação por ID
+exports.findById = async (req, res) => {
+  try {
+    const idNum = parseInt(req.params.id, 10);
+    if (isNaN(idNum) || idNum <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
+    const doacao = await doacoesService.findByIdDoacaoService(idNum);
+    return res.status(200).json(doacao);
+  } catch (error) {
+    console.error('findById:', error);
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    return res.status(500).json({ message: 'Erro interno ao buscar doação.' });
+  }
+};
+
 // Listar as doações da ONG logada (filtro por status)
 // GET /doacoes/minhas/ativas
 exports.findMinhasAtivas = async (req, res) => {
@@ -54,7 +72,6 @@ exports.findMinhasAtivas = async (req, res) => {
     const lista = await doacoesService.findMinhasDoacoesAtivasService(ongId);
     return res.status(200).json(lista);
   } catch (error) {
-    console.error('findMinhasAtivas:', error);
     return res.status(500).json({ message: 'Erro interno ao listar doações ativas.' });
   }
 };
@@ -75,23 +92,6 @@ exports.findMinhasFinalizadas = async (req, res) => {
   }
 };
 
-// Buscar doação por ID
-exports.findById = async (req, res) => {
-  try {
-    const idNum = parseInt(req.params.id, 10);
-    if (isNaN(idNum) || idNum <= 0) {
-      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-    }
-    const doacao = await doacoesService.findByIdDoacaoService(idNum);
-    return res.status(200).json(doacao);
-  } catch (error) {
-    console.error('findById:', error);
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
-    }
-    return res.status(500).json({ message: 'Erro interno ao buscar doação.' });
-  }
-};
 
 // Criar nova doação (com upload ou url_imagem)
 exports.create = async (req, res) => {
@@ -112,6 +112,31 @@ exports.create = async (req, res) => {
     return res.status(201).json(criada);
   } catch (error) {
     console.error('create:', error);
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+      error.message.includes('válidas') ||
+      error.message.includes('válido') ||
+      error.message.includes('deve conter apenas') ||
+      error.message.includes('obrigatório') ||
+      error.message.includes('inválido') ||
+      error.message.includes('não pode ser vazio') ||
+      error.message.includes('maior que zero.') ||
+      error.message.includes('O campo urgencia deve') ||
+      error.message.includes('ONG não encontrada.') ||
+      error.message.includes('O campo url_imagem deve conter uma URL válida.') ||
+      error.message.includes('prazo_necessidade')
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+    // Erro de permissão
+    if (error.message.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+    // Erro de não encontrado
+    if (error.message.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+    // Qualquer outro erro
     return res.status(500).json({ message: 'Erro interno ao criar doação.' });
   }
 };
@@ -145,12 +170,33 @@ exports.update = async (req, res) => {
     return res.status(200).json(atualizada);
   } catch (error) {
     console.error('update:', error);
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
+
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+        error.message.includes('válidas') ||
+        error.message.includes('válido') ||
+        error.message.includes('deve conter apenas') ||
+        error.message.includes('obrigatório') ||
+        error.message.includes('inválido') ||
+        error.message.includes('não pode ser vazio') ||
+        error.message.includes('maior que zero.') ||
+        error.message.includes('O campo urgencia deve') ||
+        error.message.includes('O campo url_imagem deve conter uma URL válida.')
+    ) {
+        return res.status(400).json({ message: error.message });
     }
+
+    // Erro de permissão
     if (error.message.includes('permissão')) {
-      return res.status(403).json({ message: error.message });
+        return res.status(403).json({ message: error.message });
     }
+
+    // Erro de não encontrado
+    if (error.message.includes('não encontrada')) {
+        return res.status(404).json({ message: error.message });
+    }
+
+    // Qualquer outro erro
     return res.status(500).json({ message: 'Erro interno ao atualizar doação.' });
   }
 };
@@ -176,11 +222,17 @@ exports.updateStatus = async (req, res) => {
     }
 
     const doacaoAtual = await doacoesService.findByIdDoacaoService(idNum);
+    console.log('ong_id da doação:', doacaoAtual.ong_id, 'ongId do token:', ongId);
+
+    if (doacaoAtual.ong_id !== ongId) {
+      return res.status(403).json({ message: 'Você não tem permissão para modificar esta doação.' });
+    }
+
     if (doacaoAtual.status === status) {
       return res.status(400).json({ message: `A doação já está com o status '${status}'.` });
     }
     if (doacaoAtual.status === 'FINALIZADA') {
-      return res.status(400).json({ message: 'Doação FINALIZADA não pode ser modificada.' });
+      return res.status(400).json({ message: 'Só é possível atualizar o status se a doação estiver ATIVA.' });
     }
 
     const atualizada = await doacoesService.updateStatusDoacaoService(idNum, status, ongId);
@@ -201,6 +253,7 @@ exports.updateStatus = async (req, res) => {
 exports.deleteDoacao = async (req, res) => {
   try {
     const tokenInfo = validateToken(req.headers.authorization);
+    console.log('Token info:', tokenInfo);
     if (!tokenInfo.valid) {
       return res.status(401).json({ message: tokenInfo.error });
     }
@@ -228,8 +281,6 @@ exports.deleteDoacao = async (req, res) => {
 
 
 //clean up
-
-
 // Finalizar doações expiradas
 exports.finalizarExpiradas = async (req, res) => {
   try {

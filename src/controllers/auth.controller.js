@@ -1,18 +1,18 @@
 const jwt = require('jsonwebtoken');
-const authService = require('../services/auth.service');
+const authService = require('../services/auth.service.js');
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { email_ong, password } = req.body;
+  if (!email_ong || !password) {
     return res.status(400).json({ message: 'Email e senha são obrigatórios' });
   }
 
   try {
-    const apiResponse = await authService.loginNaApiPrefeitura(email, password);
+    const apiResponse = await authService.loginNaApiPrefeitura(email_ong, password);
     console.log('🔍 Resposta completa da prefeitura:', apiResponse);
 
     // Ajuste aqui se a API retornar em apiResponse.data:
-    const { ngo: ongDataFromApi, user: userDataFromApi } = apiResponse;
+    const { ong: ongDataFromApi, user: userDataFromApi } = apiResponse;
 
     console.log('📊 Dados da ONG recebidos:', ongDataFromApi);
     console.log('👤 Dados do usuário recebidos:', userDataFromApi);
@@ -20,7 +20,7 @@ exports.login = async (req, res) => {
     const ong = await authService.sincronizarOng(ongDataFromApi, userDataFromApi);
 
     const token = jwt.sign(
-      { id_ong: ong.id_ong, email: ong.email },
+      { id_ong: ong.id_ong, email_ong: ong.email_ong },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );

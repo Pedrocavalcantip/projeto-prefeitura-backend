@@ -1,54 +1,53 @@
-const realocacoesService = require('../services/realocacoes.service');
-const { getImageData } = require('../utils/imageUtils');
-const realocacoesService = require('../services/realocacoes.service');
-// Buscar catálogo geral de realocações (Get /realocacoes/catalogo)
-const findCatalogo = async (req, res) => {
+// src/controllers/realocacoes.controller.js
+const realocacoesService    = require('../services/realocacoes.service.js');
+const { validarRealocacao } = require('../services/validacao.service.js');
+const { validateToken }     = require('../utils/tokenUtils');
+const { getImageData }      = require('../utils/imageUtils');
+
+// GET /realocacoes/catalogo
+exports.findCatalogo = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
-    const ongId = req.id_ong;
-
-    // Catálogo geral para ONGs, com filtros opcionais
-    const filtros = {
-      titulo: req.query.titulo,
-      tipo_item: req.query.tipo_item
-    };
-
-    const realocacoes = await realocacoesService.findCatalogoService(filtros);
-    res.status(200).json(realocacoes);
-
+    const filtros = { titulo: req.query.titulo, tipo_item: req.query.tipo_item };
+    const lista = await realocacoesService.findCatalogoService(filtros);
+    return res.status(200).json(lista);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Buscar realocação específica (GET /realocacoes/catalogo/:id)
-const findCatalogoById = async (req, res) => {
+// GET /realocacoes/catalogo/:id
+exports.findCatalogoById = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
+  const { id } = req.params;
+  if (isNaN(id) || parseInt(id, 10) <= 0) {
+    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+  }
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
-    const { id } = req.params;
-
-    if (isNaN(id) || parseInt(id) <= 0) {
-      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-    }
-
     const realocacao = await realocacoesService.findCatalogoByIdService(id);
-    res.status(200).json(realocacao);
+    return res.status(200).json(realocacao);
   } catch (error) {
     if (error.message.includes('não encontrada')) {
       return res.status(404).json({ message: error.message });
     }
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };
 
 // GET /realocacoes/minhas/ativas
-const findMinhasAtivas = async (req, res) => {
+exports.findMinhasAtivas = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
   try {
-    const ongId = req.id_ong;
+    const ongId = tokenInfo.decoded.id_ong;
     const lista = await realocacoesService.findMinhasRealocacoesAtivasService(ongId);
     return res.status(200).json(lista);
   } catch (err) {
@@ -58,9 +57,13 @@ const findMinhasAtivas = async (req, res) => {
 };
 
 // GET /realocacoes/minhas/finalizadas
-const findMinhasFinalizadas = async (req, res) => {
+exports.findMinhasFinalizadas = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
   try {
-    const ongId = req.id_ong;
+    const ongId = tokenInfo.decoded.id_ong;
     const lista = await realocacoesService.findMinhasRealocacoesFinalizadasService(ongId);
     return res.status(200).json(lista);
   } catch (err) {
@@ -69,110 +72,171 @@ const findMinhasFinalizadas = async (req, res) => {
   }
 };
 
-// Criar nova realocação (POST /realocacoes)
-const create = async (req, res) => {
+exports.create = async (req, res) => {
   try {
-    const ongId = req.id_ong;
+    // 1) autenticação
+    const tokenInfo = validateToken(req.headers.authorization);
+    if (!tokenInfo.valid) {
+      return res.status(401).json({ message: tokenInfo.error });
+    }
+    const ongId = tokenInfo.decoded.id_ong;
 
+    // 2) imagem obrigatória
     const imgData = getImageData(req);
     if (!imgData) {
-      return res.status(400).json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
+      return res
+        .status(400)
+        .json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
     }
 
+    // 3) monta dados e delega ao service
     const dados = { ...req.body, url_imagem: imgData.url };
-    const validacao = validarDadosRealocacao(dados);
-    if (!validacao.valido) {
-      return res.status(400).json({ message: validacao.mensagem });
+    const criada = await realocacoesService.createRealocacaoService(dados, ongId);
+
+    // 4) sucesso
+    return res.status(201).json(criada);
+
+  } catch (error) {
+    console.error('createRealocacao:', error);
+
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+      error.message?.includes('válidas') ||
+      error.message?.includes('válido') ||
+      error.message?.includes('deve conter apenas') ||
+      error.message?.includes('obrigatório') ||
+      error.message?.includes('inválido') ||
+      error.message?.includes('não pode ser vazio') ||
+      error.message?.includes('maior que zero') ||
+      error.message?.includes('O campo urgencia deve') ||
+      error.message?.includes('O campo url_imagem deve conter uma URL válida')
+    ) {
+      return res.status(400).json({ message: error.message });
     }
 
-    const criada = await realocacoesService.createRealocacaoService(dados, ongId);
-    return res.status(201).json(criada);
-  } catch (error) {
-    console.error('Erro ao criar realocação:', error);
+    // Erro de permissão
+    if (error.message?.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+
+    // Erro de não encontrado (quase não ocorre em create, mas cobre edge case relacional)
+    if (error.message?.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+
+    // Qualquer outro erro inesperado
     return res.status(500).json({ message: 'Erro interno ao criar realocação.' });
   }
 };
 
-/// Atualizar realocação (PUT /realocacoes/:id)
-const update = async (req, res) => {
+
+
+
+// PUT /realocacoes/:id
+exports.update = async (req, res) => {
   try {
-    const ongId = req.id_ong;
+    // 1) autenticação
+    const tokenInfo = validateToken(req.headers.authorization);
+    if (!tokenInfo.valid) {
+      return res.status(401).json({ message: tokenInfo.error });
+    }
+    const ongId = tokenInfo.decoded.id_ong;
+
+    // 2) validação de ID numérico
     const idNum = parseInt(req.params.id, 10);
     if (isNaN(idNum) || idNum <= 0) {
-      return res.status(400).json({ message: 'ID inválido.' });
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
     }
 
+    // 3) montagem dos dados (inclui url_imagem se houver upload)
     const imgData = getImageData(req);
-    if (!imgData) {
-      return res.status(400).json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
-    }
+    const dados   = { ...req.body };
+    if (imgData) dados.url_imagem = imgData.url;
 
-    const dados = { ...req.body, url_imagem: imgData.url };
-    const validacao = validarDadosRealocacao(dados);
-    if (!validacao.valido) {
-      return res.status(400).json({ message: validacao.mensagem });
-    }
-
+    // 4) chama o service
     const atualizada = await realocacoesService.updateRealocacaoService(idNum, dados, ongId);
     return res.status(200).json(atualizada);
+
   } catch (error) {
-    console.error('Erro ao atualizar realocação:', error);
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
+    console.error('updateRealocacao:', error);
+
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+      error.message?.includes('válidas') ||
+      error.message?.includes('válido') ||
+      error.message?.includes('deve conter apenas') ||
+      error.message?.includes('obrigatório') ||
+      error.message?.includes('inválido') ||
+      error.message?.includes('não pode ser vazio') ||
+      error.message?.includes('maior que zero') ||
+      error.message?.includes('O campo urgencia deve') ||
+      error.message?.includes('O campo url_imagem deve conter uma URL válida')
+    ) {
+      return res.status(400).json({ message: error.message });
     }
-    if (error.message.includes('permissão')) {
+
+    // Erro de permissão
+    if (error.message?.includes('permissão')) {
       return res.status(403).json({ message: error.message });
     }
+
+    // Erro de não encontrado
+    if (error.message?.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+
+    // Qualquer outro erro
     return res.status(500).json({ message: 'Erro interno ao atualizar realocação.' });
   }
 };
 
-// Atualizar status da realocação
-const updateStatus = async (req, res) => {
+
+// PATCH /realocacoes/:id/status
+exports.updateStatus = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
+
+  const ongId = tokenInfo.decoded.id_ong;
+  const idNum = parseInt(req.params.id, 10);
+  if (isNaN(idNum) || idNum <= 0) {
+    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+  }
+
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
-    const { id } = req.params;
-    const { status } = req.body;
-    const ongId = req.id_ong;
-
-    if (isNaN(id) || parseInt(id) <= 0) {
-      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-    }
-
-    if (!status || !['ATIVA', 'FINALIZADA'].includes(status)) {
-      return res.status(400).json({ message: 'Status inválido. Use ATIVA ou FINALIZADA.' });
-    }
-
-    const realocacaoAtualizada = await realocacoesService.updateStatusRealocacaoService(id, status, ongId);
-    res.status(200).json(realocacaoAtualizada);
+    // chama direto o service que já faz find→404/403 e update→sucesso
+    const finalizada = await realocacoesService.finalizarRealocacaoService(idNum, ongId);
+    return res.status(200).json(finalizada);
   } catch (error) {
-    if (error.message.includes('não encontrada')) {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes('permissão')) {
-      return res.status(403).json({ message: error.message });
-    }
-    res.status(500).json({ message: error.message });
+    // aqui pegamos o status e a message que o service “throw-ou”
+    const status  = error.status  || 500;
+    const message = error.message || 'Erro ao finalizar realocação';
+    return res.status(status).json({ message });
   }
 };
 
-// Deletar realocação
-const deleteRealocacao = async (req, res) => {
+
+// DELETE /realocacoes/:id
+exports.deleteRealocacao = async (req, res, next) => {
+  // If the client called DELETE /realocacoes/expiradas,
+  // we skip this handler and fall through to your cleanup route.
+  if (req.params.id === 'expiradas') {
+    return next();
+  }
+
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
+  const { id } = req.params;
+  if (isNaN(id) || parseInt(id, 10) <= 0) {
+    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+  }
   try {
-    if (!req.id_ong) {
-      return res.status(401).json({ message: 'Apenas ONGs podem acessar esta rota.' });
-    }
-    const { id } = req.params;
-    const ongId = req.id_ong;
-
-    if (isNaN(id) || parseInt(id) <= 0) {
-      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-    }
-
+    const ongId = tokenInfo.decoded.id_ong;
     await realocacoesService.deleteRealocacaoService(id, ongId);
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error) {
     if (error.message.includes('não encontrada')) {
       return res.status(404).json({ message: error.message });
@@ -180,17 +244,44 @@ const deleteRealocacao = async (req, res) => {
     if (error.message.includes('permissão')) {
       return res.status(403).json({ message: error.message });
     }
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = {
-  findCatalogo,
-  findCatalogoById,
-  findMinhasAtivas,
-  findMinhasFinalizadas,
-  create,
-  update,
-  updateStatus,
-  deleteRealocacao,
+
+
+// PATCH /realocacoes/expiradas
+exports.finalizarRealocacoesAntigas = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
+  try {
+    const ids = await realocacoesService.finalizarRealocacoesAntigas();
+    return res.status(200).json({
+      message: 'Realocações antigas finalizadas com sucesso.',
+      idsFinalizadas: ids
+    });
+  } catch (error) {
+    console.error('Erro em finalizarRealocacoesAntigas:', error);
+    return res.status(500).json({ message: 'Erro interno ao finalizar realocações antigas.' });
+  }
+};
+
+// DELETE /realocacoes/expiradas
+exports.limparRealocacoesExpiradas = async (req, res) => {
+  const tokenInfo = validateToken(req.headers.authorization);
+  if (!tokenInfo.valid) {
+    return res.status(401).json({ message: tokenInfo.error });
+  }
+  try {
+    const resultado = await realocacoesService.limparRealocacoesExpiradas(true);
+    return res.status(200).json({
+      message: 'Limpeza de realocações expiradas realizada com sucesso.',
+      detalhes: resultado
+    });
+  } catch (error) {
+    console.error('Erro em limparRealocacoesExpiradas:', error);
+    return res.status(500).json({ message: 'Erro interno ao limpar realocações expiradas.' });
+  }
 };
