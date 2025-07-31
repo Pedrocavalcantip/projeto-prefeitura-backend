@@ -89,7 +89,7 @@ exports.create = async (req, res) => {
         .json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
     }
 
-    // 3) monta dados e delega ao service (que faz validação e throws com status)
+    // 3) monta dados e delega ao service
     const dados = { ...req.body, url_imagem: imgData.url };
     const criada = await realocacoesService.createRealocacaoService(dados, ongId);
 
@@ -99,51 +99,97 @@ exports.create = async (req, res) => {
   } catch (error) {
     console.error('createRealocacao:', error);
 
-    // se service lançou { status, message }, respeita esse HTTP code
-    if (error.status) {
-      return res.status(error.status).json({ message: error.message });
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+      error.message?.includes('válidas') ||
+      error.message?.includes('válido') ||
+      error.message?.includes('deve conter apenas') ||
+      error.message?.includes('obrigatório') ||
+      error.message?.includes('inválido') ||
+      error.message?.includes('não pode ser vazio') ||
+      error.message?.includes('maior que zero') ||
+      error.message?.includes('O campo urgencia deve') ||
+      error.message?.includes('O campo url_imagem deve conter uma URL válida')
+    ) {
+      return res.status(400).json({ message: error.message });
     }
 
-    // caso contrário (erro de validação sem status), retorna 400
-    return res.status(400).json({ message: error.message });
+    // Erro de permissão
+    if (error.message?.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+
+    // Erro de não encontrado (quase não ocorre em create, mas cobre edge case relacional)
+    if (error.message?.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+
+    // Qualquer outro erro inesperado
+    return res.status(500).json({ message: 'Erro interno ao criar realocação.' });
   }
 };
+
 
 
 
 // PUT /realocacoes/:id
 exports.update = async (req, res) => {
-  // 1) autenticação
-  const tokenInfo = validateToken(req.headers.authorization);
-  if (!tokenInfo.valid) {
-    return res.status(401).json({ message: tokenInfo.error });
-  }
-  const ongId = tokenInfo.decoded.id_ong;
-
-  // 2) validação de ID numérico
-  const idNum = parseInt(req.params.id, 10);
-  if (isNaN(idNum) || idNum <= 0) {
-    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
-  }
-
-  // 3) prepara dados (inclui url_imagem se houver upload)
-  const imgData = getImageData(req);
-  const dados   = { ...req.body };
-  if (imgData) dados.url_imagem = imgData.url;
-
-  // 4) delega tudo ao service
   try {
+    // 1) autenticação
+    const tokenInfo = validateToken(req.headers.authorization);
+    if (!tokenInfo.valid) {
+      return res.status(401).json({ message: tokenInfo.error });
+    }
+    const ongId = tokenInfo.decoded.id_ong;
+
+    // 2) validação de ID numérico
+    const idNum = parseInt(req.params.id, 10);
+    if (isNaN(idNum) || idNum <= 0) {
+      return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+    }
+
+    // 3) montagem dos dados (inclui url_imagem se houver upload)
+    const imgData = getImageData(req);
+    const dados   = { ...req.body };
+    if (imgData) dados.url_imagem = imgData.url;
+
+    // 4) chama o service
     const atualizada = await realocacoesService.updateRealocacaoService(idNum, dados, ongId);
     return res.status(200).json(atualizada);
+
   } catch (error) {
-  // se o service lançou { status, message }, devolve fielmente
-  if (error.status) {
-    return res.status(error.status).json({ message: error.message });
+    console.error('updateRealocacao:', error);
+
+    // Erros de validação de campos obrigatórios ou formatos
+    if (
+      error.message?.includes('válidas') ||
+      error.message?.includes('válido') ||
+      error.message?.includes('deve conter apenas') ||
+      error.message?.includes('obrigatório') ||
+      error.message?.includes('inválido') ||
+      error.message?.includes('não pode ser vazio') ||
+      error.message?.includes('maior que zero') ||
+      error.message?.includes('O campo urgencia deve') ||
+      error.message?.includes('O campo url_imagem deve conter uma URL válida')
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    // Erro de permissão
+    if (error.message?.includes('permissão')) {
+      return res.status(403).json({ message: error.message });
+    }
+
+    // Erro de não encontrado
+    if (error.message?.includes('não encontrada')) {
+      return res.status(404).json({ message: error.message });
+    }
+
+    // Qualquer outro erro
+    return res.status(500).json({ message: 'Erro interno ao atualizar realocação.' });
   }
-  // caso contrário, é validação client‐side → 400
-  return res.status(400).json({ message: error.message });
 };
-};
+
 
 // PATCH /realocacoes/:id/status
 exports.updateStatus = async (req, res) => {
