@@ -1,5 +1,5 @@
 const prisma = require('../config/database.js');
-const { validarRealocacao, validarCamposComuns } = require('./validacao.service.js');
+const { validarRealocacao } = require('./validacao.service.js');
 // Listar todas as realocações disponíveis (Get /realocacoes/catalogo)
 exports.findCatalogoService = async (filtros = {}) => {
   const { titulo, tipo_item } = filtros;
@@ -134,7 +134,7 @@ exports.findMinhasRealocacoesFinalizadasService = async (ongId) => {
 
 // Criar realocação
 exports.createRealocacaoService = async (realocacaoData, ongId) => {
-  validarRealocacao(realocacaoData, 'criar');
+  validarRealocacao(realocacaoData);
   // Converte quantidade para número (default 1)
   const quantidade = realocacaoData.quantidade
     ? parseInt(realocacaoData.quantidade, 10)

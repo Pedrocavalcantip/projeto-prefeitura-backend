@@ -1,6 +1,6 @@
 // src/controllers/realocacoes.controller.js
 const realocacoesService    = require('../services/realocacoes.service.js');
-const { validarDadosRealocacao } = require('../services/validacao.service.js');
+const { validarRealocacao } = require('../services/validacao.service.js');
 const { validateToken }     = require('../utils/tokenUtils');
 const { getImageData }      = require('../utils/imageUtils');
 
@@ -72,33 +72,40 @@ exports.findMinhasFinalizadas = async (req, res) => {
   }
 };
 
-// POST /realocacoes
 exports.create = async (req, res) => {
-  const tokenInfo = validateToken(req.headers.authorization);
-  if (!tokenInfo.valid) {
-    return res.status(401).json({ message: tokenInfo.error });
-  }
-
-  const ongId = tokenInfo.decoded.id_ong;
-  const imgData = getImageData(req);
-
-  if (!imgData) {
-    return res.status(400).json({
-      message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.'
-    });
-  }
-
-  const dados = { ...req.body, url_imagem: imgData.url };
-
   try {
+    // 1) autenticação
+    const tokenInfo = validateToken(req.headers.authorization);
+    if (!tokenInfo.valid) {
+      return res.status(401).json({ message: tokenInfo.error });
+    }
+    const ongId = tokenInfo.decoded.id_ong;
+
+    // 2) imagem obrigatória
+    const imgData = getImageData(req);
+    if (!imgData) {
+      return res
+        .status(400)
+        .json({ message: 'Informe a imagem: upload (foto) ou url_imagem no corpo.' });
+    }
+
+    // 3) monta dados e delega ao service (que faz validação e throws com status)
+    const dados = { ...req.body, url_imagem: imgData.url };
     const criada = await realocacoesService.createRealocacaoService(dados, ongId);
+
+    // 4) sucesso
     return res.status(201).json(criada);
+
   } catch (error) {
-    console.error('Erro ao criar realocação:', error);
-    const status = error.status || 500;
-    return res.status(status).json({
-      message: error.message || 'Erro interno ao criar realocação.'
-    });
+    console.error('createRealocacao:', error);
+
+    // se service lançou { status, message }, respeita esse HTTP code
+    if (error.status) {
+      return res.status(error.status).json({ message: error.message });
+    }
+
+    // caso contrário (erro de validação sem status), retorna 400
+    return res.status(400).json({ message: error.message });
   }
 };
 
@@ -106,26 +113,36 @@ exports.create = async (req, res) => {
 
 // PUT /realocacoes/:id
 exports.update = async (req, res) => {
+  // 1) autenticação
   const tokenInfo = validateToken(req.headers.authorization);
   if (!tokenInfo.valid) {
     return res.status(401).json({ message: tokenInfo.error });
   }
-
   const ongId = tokenInfo.decoded.id_ong;
-  const imgData = getImageData(req);
 
-  const dados = { ...req.body };
-  if (imgData) {
-    dados.url_imagem = imgData.url;
+  // 2) validação de ID numérico
+  const idNum = parseInt(req.params.id, 10);
+  if (isNaN(idNum) || idNum <= 0) {
+    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
   }
 
+  // 3) prepara dados (inclui url_imagem se houver upload)
+  const imgData = getImageData(req);
+  const dados   = { ...req.body };
+  if (imgData) dados.url_imagem = imgData.url;
+
+  // 4) delega tudo ao service
   try {
-    const atualizada = await realocacoesService.updateRealocacaoService(req.params.id, dados, ongId);
+    const atualizada = await realocacoesService.updateRealocacaoService(idNum, dados, ongId);
     return res.status(200).json(atualizada);
   } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ message: error.message || 'Erro ao atualizar realocação' });
+  // se o service lançou { status, message }, devolve fielmente
+  if (error.status) {
+    return res.status(error.status).json({ message: error.message });
   }
+  // caso contrário, é validação client‐side → 400
+  return res.status(400).json({ message: error.message });
+};
 };
 
 // PATCH /realocacoes/:id/status
@@ -136,15 +153,23 @@ exports.updateStatus = async (req, res) => {
   }
 
   const ongId = tokenInfo.decoded.id_ong;
+  const idNum = parseInt(req.params.id, 10);
+  if (isNaN(idNum) || idNum <= 0) {
+    return res.status(400).json({ message: 'ID deve ser um número válido maior que zero.' });
+  }
 
   try {
-    const finalizada = await realocacoesService.finalizarRealocacaoService(req.params.id, ongId);
+    // chama direto o service que já faz find→404/403 e update→sucesso
+    const finalizada = await realocacoesService.finalizarRealocacaoService(idNum, ongId);
     return res.status(200).json(finalizada);
   } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ message: error.message || 'Erro ao finalizar realocação' });
+    // aqui pegamos o status e a message que o service “throw-ou”
+    const status  = error.status  || 500;
+    const message = error.message || 'Erro ao finalizar realocação';
+    return res.status(status).json({ message });
   }
 };
+
 
 // DELETE /realocacoes/:id
 exports.deleteRealocacao = async (req, res, next) => {
