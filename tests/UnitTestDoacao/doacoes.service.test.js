@@ -8,8 +8,12 @@ jest.mock('../../src/config/database', () => ({
     updateMany:  jest.fn(),
     deleteMany:  jest.fn(),
     delete:      jest.fn(),
+  },
+  ongs: {  // <-- adicione essa linha
+    findUnique: jest.fn(),
   }
 }));
+
 
 const prisma = require('../../src/config/database');
 const { validarDoacao } = require('../../src/services/validacao.service');
@@ -105,8 +109,10 @@ describe('doacoes.service', () => {
     };
 
     it('chama validarDoacao e prisma.create com dados convertidos', async () => {
+      prisma.ongs.findUnique.mockResolvedValue({ id_ong: 10 }); // <--- ADICIONE ISSO
       validarDoacao.mockReturnValue();
       prisma.produtos.create.mockResolvedValue({ id_produto:1 });
+
       const out = await doacoesService.createDoacaoService(baseData, 10);
 
       expect(validarDoacao).toHaveBeenCalledWith(baseData);
@@ -123,12 +129,14 @@ describe('doacoes.service', () => {
     });
 
     it('lança erro se validarDoacao falhar', async () => {
+      prisma.ongs.findUnique.mockResolvedValue({ id_ong: 1 }); // <--- ADICIONE ISSO
       validarDoacao.mockImplementation(() => { throw new Error('X'); });
+
       await expect(doacoesService.createDoacaoService({},1))
         .rejects
         .toThrow('X');
     });
-  });
+
 
   describe('updateDoacaoService', () => {
     const data = {
@@ -264,4 +272,5 @@ describe('doacoes.service', () => {
       expect(out).toEqual({ totalExcluidas:5 });
     });
   });
+});
 });
