@@ -48,11 +48,11 @@ describe('Auth Middleware', () => {
     req.headers.authorization = 'Bearer valid.token.here';
     const decoded = { email_ong: 'contato@ong.org', id_ong: 123 };
     jwt.verify.mockImplementation((token, secret, cb) => cb(null, decoded));
-
+    
     authMiddleware(req, res, next);
 
     expect(jwt.verify).toHaveBeenCalledWith('valid.token.here', process.env.JWT_SECRET, expect.any(Function));
-    expect(req._ong).toBe(decoded.email_ong);
+    expect(req.email_ong).toBe(decoded.email_ong);
     expect(req.id_ong).toBe(decoded.id_ong);
     expect(next).toHaveBeenCalled();
     expect(res.status).not.toHaveBeenCalled();
