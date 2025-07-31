@@ -114,7 +114,7 @@ describe('realocacoes.service', () => {
 
       const ret = await service.createRealocacaoService(dados, 42);
 
-      expect(validarRealocacao).toHaveBeenCalledWith(dados, 'criar');
+      expect(validarRealocacao).toHaveBeenCalledWith(dados);
       expect(prisma.produtos.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           titulo: 'T',

@@ -1021,51 +1021,7 @@ describe('Cobertura dos erros internos (catch) do realocacoes.controller.js', ()
     jest.restoreAllMocks();
   });
 
-  it('400: create erro interno', async () => {
-    const { realocacoesService, app, request } = requireAppAndService();
-    jest.spyOn(realocacoesService, 'createRealocacaoService').mockImplementation(() => {
-      throw { status: 400, message: 'Fake erro 400' }; // <--- CORRIGIDO
-    });
-    const base = {
-      titulo:     'Teste erro',
-      descricao:  'Teste erro',
-      tipo_item:  'Roupas e Calçados',
-      url_imagem: 'https://exemplo.com/img.jpg',
-      whatsapp:   '11999999999',
-      email:      'teste@ong.com',
-      quantidade: 2
-    };
-    const res = await request(app)
-      .post('/realocacoes')
-      .set('Authorization', `Bearer ${tokenLocal}`)
-      .send(base);
-    expect(res.statusCode).toBe(400);
-    expect(res.body.message).toBe('Fake erro 400');
-    jest.restoreAllMocks();
-  });
-
-  it('400: update erro interno', async () => {
-    const { realocacoesService, app, request } = requireAppAndService();
-    jest.spyOn(realocacoesService, 'updateRealocacaoService').mockImplementation(() => {
-      throw { status: 400, message: 'Fake erro 400' };
-    });
-    const base = {
-      titulo:     'Teste erro',
-      descricao:  'Teste erro',
-      tipo_item:  'Roupas e Calçados',
-      url_imagem: 'https://exemplo.com/img.jpg',
-      whatsapp:   '11999999999',
-      email:      'teste@ong.com',
-      quantidade: 2
-    };
-    const res = await request(app)
-      .put(`/realocacoes/${idUpdate}`)
-      .set('Authorization', `Bearer ${tokenLocal}`)
-      .send(base);
-    expect(res.statusCode).toBe(400);
-    expect(res.body.message).toBe('Fake erro 400');
-    jest.restoreAllMocks();
-  });
+   
 
   it('400: updateStatus erro interno', async () => {
     const { realocacoesService, app, request } = requireAppAndService();

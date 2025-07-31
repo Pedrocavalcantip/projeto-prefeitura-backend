@@ -1,4 +1,3 @@
-
 jest.mock('../../src/services/doacoes.service.js', () => ({
   finalizarDoacoesVencidas: jest.fn(),
   limparDoacoesExpiradas: jest.fn(),
