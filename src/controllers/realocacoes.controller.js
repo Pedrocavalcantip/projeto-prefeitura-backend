@@ -4,6 +4,34 @@ const { validarRealocacao } = require('../services/validacao.service.js');
 const { validateToken }     = require('../utils/tokenUtils');
 const { getImageData }      = require('../utils/imageUtils');
 
+/**
+ * @swagger
+ * /realocacoes/catalogo:
+ *   get:
+ *     summary: Lista todas as realocações públicas (ATIVAS)
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: titulo
+ *         schema:
+ *           type: string
+ *         description: Filtro pelo título da realocação
+ *       - in: query
+ *         name: tipo_item
+ *         schema:
+ *           type: string
+ *         description: Filtro pela categoria do item
+ *     responses:
+ *       200:
+ *         description: Lista de realocações ativas
+ *       401:
+ *         description: Token inválido ou ausente
+ *       500:
+ *         description: Erro interno ao listar realocações
+ */
+
 // GET /realocacoes/catalogo
 exports.findCatalogo = async (req, res) => {
   const tokenInfo = validateToken(req.headers.authorization);
@@ -18,6 +46,34 @@ exports.findCatalogo = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+/**
+ * @swagger
+ * /realocacoes/catalogo/{id}:
+ *   get:
+ *     summary: Busca detalhes de uma realocação pública pelo ID
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da realocação
+ *     responses:
+ *       200:
+ *         description: Realocação encontrada
+ *       400:
+ *         description: ID inválido
+ *       401:
+ *         description: Token inválido ou ausente
+ *       404:
+ *         description: Realocação não encontrada
+ *       500:
+ *         description: Erro interno ao buscar realocação
+ */
 
 // GET /realocacoes/catalogo/:id
 exports.findCatalogoById = async (req, res) => {
@@ -40,6 +96,40 @@ exports.findCatalogoById = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /realocacoes/minhas/ativas:
+ *   get:
+ *     summary: Lista realocações ATIVAS da ONG logada
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de realocações ativas da ONG
+ *       401:
+ *         description: Token inválido ou ausente
+ *       500:
+ *         description: Erro interno ao listar realocações
+ */
+
+/**
+ * @swagger
+ * /realocacoes/minhas/finalizadas:
+ *   get:
+ *     summary: Lista realocações FINALIZADAS da ONG logada
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de realocações finalizadas da ONG
+ *       401:
+ *         description: Token inválido ou ausente
+ *       500:
+ *         description: Erro interno ao listar realocações
+ */
+
 // GET /realocacoes/minhas/ativas
 exports.findMinhasAtivas = async (req, res) => {
   const tokenInfo = validateToken(req.headers.authorization);
@@ -55,6 +145,52 @@ exports.findMinhasAtivas = async (req, res) => {
     return res.status(500).json({ message: 'Erro interno ao listar realocações ativas.' });
   }
 };
+
+/**
+ * @swagger
+ * /realocacoes:
+ *   post:
+ *     summary: Cria uma nova realocação de item
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               tipo_item:
+ *                 type: string
+ *               urgencia:
+ *                 type: string
+ *               quantidade:
+ *                 type: integer
+ *               email:
+ *                 type: string
+ *               whatsapp:
+ *                 type: string
+ *               prazo_necessidade:
+ *                 type: string
+ *                 format: date
+ *               foto:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Realocação criada
+ *       400:
+ *         description: Dados inválidos ou imagem ausente
+ *       401:
+ *         description: Token inválido
+ *       500:
+ *         description: Erro interno ao criar realocação
+ */
 
 // GET /realocacoes/minhas/finalizadas
 exports.findMinhasFinalizadas = async (req, res) => {
@@ -72,6 +208,53 @@ exports.findMinhasFinalizadas = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /realocacoes:
+ *   post:
+ *     summary: Cria uma nova realocação de item
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               tipo_item:
+ *                 type: string
+ *               urgencia:
+ *                 type: string
+ *               quantidade:
+ *                 type: integer
+ *               email:
+ *                 type: string
+ *               whatsapp:
+ *                 type: string
+ *               prazo_necessidade:
+ *                 type: string
+ *                 format: date
+ *               foto:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Realocação criada
+ *       400:
+ *         description: Dados inválidos ou imagem ausente
+ *       401:
+ *         description: Token inválido
+ *       500:
+ *         description: Erro interno ao criar realocação
+ */
+
+// PUT /realocacoes/:id
 exports.create = async (req, res) => {
   try {
     // 1) autenticação
@@ -130,7 +313,61 @@ exports.create = async (req, res) => {
 };
 
 
-
+/**
+ * @swagger
+ * /realocacoes/{id}:
+ *   put:
+ *     summary: Atualiza uma realocação existente (apenas se ATIVA)
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               tipo_item:
+ *                 type: string
+ *               urgencia:
+ *                 type: string
+ *               quantidade:
+ *                 type: integer
+ *               email:
+ *                 type: string
+ *               whatsapp:
+ *                 type: string
+ *               prazo_necessidade:
+ *                 type: string
+ *                 format: date
+ *               foto:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Realocação atualizada
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Token inválido
+ *       403:
+ *         description: Sem permissão para modificar
+ *       404:
+ *         description: Realocação não encontrada
+ *       500:
+ *         description: Erro interno ao atualizar realocação
+ */
 
 // PUT /realocacoes/:id
 exports.update = async (req, res) => {
@@ -190,6 +427,35 @@ exports.update = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /realocacoes/{id}/status:
+ *   patch:
+ *     summary: Finaliza uma realocação (ATIVA → FINALIZADA)
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Status atualizado para FINALIZADA
+ *       400:
+ *         description: Status inválido ou já finalizada
+ *       401:
+ *         description: Token inválido
+ *       403:
+ *         description: Sem permissão
+ *       404:
+ *         description: Realocação não encontrada
+ *       500:
+ *         description: Erro interno ao atualizar status
+ */
+
 
 // PATCH /realocacoes/:id/status
 exports.updateStatus = async (req, res) => {
@@ -215,6 +481,33 @@ exports.updateStatus = async (req, res) => {
     return res.status(status).json({ message });
   }
 };
+
+/**
+ * @swagger
+ * /realocacoes/{id}:
+ *   delete:
+ *     summary: Deleta uma realocação da ONG logada
+ *     tags: [Realocações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: Deleção realizada com sucesso
+ *       401:
+ *         description: Token inválido
+ *       403:
+ *         description: Sem permissão
+ *       404:
+ *         description: Realocação não encontrada
+ *       500:
+ *         description: Erro interno ao deletar realocação
+ */
 
 
 // DELETE /realocacoes/:id

@@ -1,6 +1,19 @@
+// MOCK AQUI PRIMEIRO
+jest.mock('../../src/services/auth.service.js', () => ({
+  loginNaApiPrefeitura: jest.fn().mockResolvedValue({
+    user: { email: 'ong1@gmail.com' },
+    ngo: { name: 'ONG Teste', logo_photo_url: 'https://logo.png' }
+  }),
+  sincronizarOng: jest.fn().mockResolvedValue({
+    id_ong: 1,
+    email_ong: 'ong1@gmail.com'
+  })
+}));
+
+// DEPOIS OS IMPORTS
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
-const app = require('../../index'); 
+const app = require('../../index');
 
 describe('Doações - PUT (atualização)', () => {
     let token;

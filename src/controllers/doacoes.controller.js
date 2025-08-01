@@ -2,6 +2,34 @@ const doacoesService = require('../services/doacoes.service.js');
 const { validateToken } = require('../utils/tokenUtils.js');
 const { getImageData } = require('../utils/imageUtils.js');
 
+
+
+/**
+ * @swagger
+ * /doacoes:
+ *   get:
+ *     summary: Lista todas as doações públicas (somente ATIVAS)
+ *     tags: [Doações]
+ *     parameters:
+ *       - in: query
+ *         name: titulo
+ *         schema:
+ *           type: string
+ *         description: Filtro pelo título da doação
+ *       - in: query
+ *         name: tipo_item
+ *         schema:
+ *           type: string
+ *         description: Filtro pela categoria do item
+ *     responses:
+ *       200:
+ *         description: Lista de doações ativas
+ *       400:
+ *         description: tipo_item inválido
+ *       500:
+ *         description: Erro interno
+ */
+
 // Listar todas as doações públicas (filtros opcionais)
 exports.findAll = async (req, res) => {
   try {
@@ -31,6 +59,19 @@ exports.findAll = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /doacoes/prestes-a-vencer:
+ *   get:
+ *     summary: Lista doações públicas com prazo de validade em até 14 dias
+ *     tags: [Doações]
+ *     responses:
+ *       200:
+ *         description: Lista retornada com sucesso
+ *       500:
+ *         description: Erro interno
+ */
+
 // Listar doações que vencem em até 14 dias
 exports.findPrestesAVencer = async (req, res) => {
   try {
@@ -41,6 +82,31 @@ exports.findPrestesAVencer = async (req, res) => {
     return res.status(500).json({ message: 'Erro interno ao listar doações prestes a vencer.' });
   }
 };
+
+/**
+ * @swagger
+ * /doacoes/{id}:
+ *   get:
+ *     summary: Busca uma doação pública por ID
+ *     tags: [Doações]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da doação
+ *     responses:
+ *       200:
+ *         description: Doação encontrada
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Doação não encontrada
+ *       500:
+ *         description: Erro interno
+ */
+
 
 // Buscar doação por ID
 exports.findById = async (req, res) => {
@@ -59,6 +125,22 @@ exports.findById = async (req, res) => {
     return res.status(500).json({ message: 'Erro interno ao buscar doação.' });
   }
 };
+/**
+ * @swagger
+ * /doacoes/minhas/ativas:
+ *   get:
+ *     summary: Lista doações ATIVAS da ONG logada
+ *     tags: [Doações]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista retornada
+ *       401:
+ *         description: Token inválido ou ausente
+ *       500:
+ *         description: Erro interno
+ */
 
 // Listar as doações da ONG logada (filtro por status)
 // GET /doacoes/minhas/ativas
@@ -76,6 +158,23 @@ exports.findMinhasAtivas = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /doacoes/minhas/finalizadas:
+ *   get:
+ *     summary: Lista doações FINALIZADAS da ONG logada
+ *     tags: [Doações]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista retornada
+ *       401:
+ *         description: Token inválido ou ausente
+ *       500:
+ *         description: Erro interno
+ */
+
 // GET /doacoes/minhas/finalizadas
 exports.findMinhasFinalizadas = async (req, res) => {
   try {
@@ -91,6 +190,52 @@ exports.findMinhasFinalizadas = async (req, res) => {
     return res.status(500).json({ message: 'Erro interno ao listar doações finalizadas.' });
   }
 };
+
+/**
+ * @swagger
+ * /doacoes:
+ *   post:
+ *     summary: Cria uma nova doação
+ *     tags: [Doações]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               tipo_item:
+ *                 type: string
+ *               urgencia:
+ *                 type: string
+ *               quantidade:
+ *                 type: integer
+ *               email:
+ *                 type: string
+ *               whatsapp:
+ *                 type: string
+ *               prazo_necessidade:
+ *                 type: string
+ *                 format: date
+ *               foto:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Doação criada
+ *       400:
+ *         description: Dados inválidos ou imagem ausente
+ *       401:
+ *         description: Token inválido
+ *       500:
+ *         description: Erro interno
+ */
 
 
 // Criar nova doação (com upload ou url_imagem)
@@ -140,6 +285,62 @@ exports.create = async (req, res) => {
     return res.status(500).json({ message: 'Erro interno ao criar doação.' });
   }
 };
+
+/**
+ * @swagger
+ * /doacoes/{id}:
+ *   put:
+ *     summary: Atualiza uma doação existente (se ainda ATIVA)
+ *     tags: [Doações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               tipo_item:
+ *                 type: string
+ *               urgencia:
+ *                 type: string
+ *               quantidade:
+ *                 type: integer
+ *               email:
+ *                 type: string
+ *               whatsapp:
+ *                 type: string
+ *               prazo_necessidade:
+ *                 type: string
+ *                 format: date
+ *               foto:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Doação atualizada
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Token inválido
+ *       403:
+ *         description: Sem permissão
+ *       404:
+ *         description: Doação não encontrada
+ *       500:
+ *         description: Erro interno
+ */
 
 // Atualizar doação (pode receber novo upload ou manter url existente)
 exports.update = async (req, res) => {
@@ -201,6 +402,45 @@ exports.update = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /doacoes/{id}/status:
+ *   patch:
+ *     summary: Atualiza o status de uma doação (ATIVA ⇄ FINALIZADA)
+ *     tags: [Doações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [ATIVA, FINALIZADA]
+ *     responses:
+ *       200:
+ *         description: Status atualizado
+ *       400:
+ *         description: Status inválido ou doação já finalizada
+ *       401:
+ *         description: Token inválido
+ *       403:
+ *         description: Sem permissão
+ *       404:
+ *         description: Doação não encontrada
+ *       500:
+ *         description: Erro interno
+ */
+
 // Atualizar apenas status da doação
 exports.updateStatus = async (req, res) => {
   try {
@@ -248,6 +488,33 @@ exports.updateStatus = async (req, res) => {
     return res.status(500).json({ message: 'Erro interno ao atualizar status.' });
   }
 };
+
+/**
+ * @swagger
+ * /doacoes/{id}:
+ *   delete:
+ *     summary: Deleta uma doação da ONG logada
+ *     tags: [Doações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: Deleção realizada com sucesso
+ *       401:
+ *         description: Token inválido
+ *       403:
+ *         description: Sem permissão
+ *       404:
+ *         description: Doação não encontrada
+ *       500:
+ *         description: Erro interno
+ */
 
 // Deletar doação
 exports.deleteDoacao = async (req, res) => {
