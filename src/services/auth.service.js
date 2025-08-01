@@ -6,17 +6,36 @@ exports.loginNaApiPrefeitura = async (email_ong, password) => {
   try {
     const response = await axios.post(
       'https://bora-impactar-dev.setd.rdmapps.com.br/api/login',
-      { email_ong, password }
+      {
+        email: email_ong,
+        password
+      }
     );
     return response.data;
   } catch (error) {
-    console.error('Erro na API da prefeitura:', error.response?.data || error.message);
-    if (error.response?.status === 401) {
-      throw new Error('Falha na autenticação');
+    // Se error.response existe, loga status/data/message. Se não, loga o erro inteiro.
+    if (error.response) {
+      console.error('Erro na API da prefeitura:', {
+        status: error.response.status,
+        data: error.response.data,
+        message: error.message,
+      });
+
+      // Tratamento de erro 401: credenciais inválidas
+      if (error.response.status === 401) {
+        throw new Error('Credenciais inválidas');
+      }
+    } else {
+      // Erro sem response: rede, timeout, DNS, etc
+      console.error('Erro na API da prefeitura (sem response):', error);
     }
-    throw new Error('Falha na autenticação com a API da prefeitura');
+
+    // Erro genérico para falha de conexão, timeout, etc
+    throw new Error('Falha ao se conectar à API da prefeitura');
   }
 };
+
+
 
 // Sincroniza (upsert) dados da ONG no banco
 exports.sincronizarOng = async (ongData, userData) => {
@@ -26,10 +45,10 @@ exports.sincronizarOng = async (ongData, userData) => {
   console.log('🔄 Sincronizando dados da ONG...');
 
   const ong = await prisma.ongs.upsert({
-    where: { email_ong: userData.email_ong },
+    where: { email_ong: userData.email_ong }, // <- permanece email_ong no seu sistema
     update: {
-      nome:      ongData.name,
-      logo_url:  ongData.logo_photo_url,
+      nome:     ongData.name,
+      logo_url: ongData.logo_photo_url,
     },
     create: {
       email_ong: userData.email_ong,
