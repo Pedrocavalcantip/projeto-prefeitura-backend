@@ -16,8 +16,8 @@ const realocacoesRoutes = require('./src/routes/realocacoes.routes.js');
 
 const app = express();
 
-// Configura CORS 
-app.use(cors({ origin: 'http://localhost:3000' }));
+// Configura CORS
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 app.use(express.json());
 
