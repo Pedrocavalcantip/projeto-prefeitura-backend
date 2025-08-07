@@ -33,6 +33,8 @@ exports.findAllDoacoesService = async (filtros = {}) => {
       url_imagem: true,
       prazo_necessidade: true,
       criado_em: true,
+      whatsapp: true,
+      email: true,
       ong: {
         select: {
           nome: true,
@@ -102,6 +104,8 @@ exports.findMinhasDoacoesAtivasService = async (ongId) => {
       url_imagem:       true,
       prazo_necessidade:true,
       criado_em:        true,
+      whatsapp: true,
+      email: true,
       ong: {
         select: {
           nome:     true,
@@ -133,7 +137,9 @@ exports.findMinhasDoacoesFinalizadasService = async (ongId) => {
       status:           true,
       url_imagem:       true,
       criado_em:        true,
-      finalizado_em:    true,      
+      finalizado_em:    true, 
+      whatsapp:         true,
+      email:            true,
       ong: {
         select: {
           nome:     true,
