@@ -13,8 +13,13 @@ require('./src/jobs/realocacoesJob.js');
 const authRouter = require('./src/routes/auth.routes.js');
 const doacoesRouter = require('./src/routes/doacoes.routes.js');
 const realocacoesRoutes = require('./src/routes/realocacoes.routes.js');
+const uploadRoutes = require('./src/routes/upload.routes.js');
 
 const app = express();
+
+
+// E esta linha junto com app.use():
+
 
 // Configura CORS
 app.use(cors({ origin: 'http://localhost:5173' }));
@@ -28,6 +33,7 @@ require('./src/config/swagger')(app); // ← agora sim, depois do app criado
 app.use('/auth', authRouter);               // POST /auth/login
 app.use('/doacoes', doacoesRouter);         // CRUD de doações
 app.use('/realocacoes', realocacoesRoutes); // CRUD de realocações
+app.use('/upload', uploadRoutes);
 
 app.get('/', (req, res) => {
   res.send('Servidor do Hub de Doações está no ar!');
