@@ -30,6 +30,8 @@ exports.findCatalogoService = async (filtros = {}) => {
       url_imagem: true,
       status: true,
       criado_em: true,
+      whatsapp: true,
+      email: true,
       prazo_necessidade: true,
       ong: {
         select: {
@@ -100,7 +102,9 @@ exports.findMinhasRealocacoesAtivasService = async (ongId) => {
       quantidade: true,
       status:     true,
       url_imagem: true,
-      criado_em:  true
+      criado_em:  true,
+        whatsapp:   true,
+        email:      true
     },
     orderBy: {
       criado_em: 'desc'   // <-- aqui estava ok, não precisa mudar
@@ -124,7 +128,7 @@ exports.findMinhasRealocacoesFinalizadasService = async (ongId) => {
       status:        true,
       url_imagem:    true,
       criado_em:     true,
-      finalizado_em: true
+      finalizado_em: true,      whatsapp:      true,      email:         true
     },
     orderBy: {
       finalizado_em: 'desc'  // <-- aqui estava ok, não precisa mudar
@@ -267,3 +271,5 @@ const getDataSeisMesesAtras = () => {
   data.setMonth(data.getMonth() - 6);
   return data;
 };
+
+
