@@ -97,6 +97,6 @@ describe('Integração Auth - /auth/protegida', () => {
       .get('/auth/protegida')
       .set('Authorization', `Bearer ${expiredToken}`);
     expect(res.statusCode).toBe(401);
-    expect(res.body).toHaveProperty('message', 'Token inválido');
+    expect(res.body).toHaveProperty('message', 'Token expirado');
   });
 });

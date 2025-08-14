@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../../index'); 
 const { id } = require('date-fns/locale');
+const path = require('path');
 // Teste de criacao de doacao 
 describe('Doacoes - POST (criacao)', () => {
     let token;
@@ -126,6 +127,24 @@ describe('Doacoes - POST (criacao)', () => {
         .send(doacao);
       expect(response.statusCode).toBe(400);
       expect(response.body.message).toContain('O campo email deve conter um endereço válido.');
+    });
+
+    it('201: Cria com upload de imagem (arquivo)', async () => {
+      const caminho = path.resolve('C:/Users/felip/Downloads/cadeira de rodas.jpg');
+
+      const res = await request(app)
+        .post('/realocacoes')
+        .set('Authorization', `Bearer ${token}`)
+        .field('titulo',     'Realocação com upload')
+        .field('descricao',  'Teste de imagem')
+        .field('tipo_item',  'Utensílios Gerais')
+        .field('whatsapp',   '11999999999')
+        .field('email',      'teste@ong.com')
+        .field('quantidade', '1')
+        .attach('foto', caminho);
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty('id_produto');
     });
 
     it('deve retornar erro 400 para whatsapp inválido', async () => {

@@ -1,0 +1,66 @@
+name: Testes Backend
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hub-de-doacoes
+        options: >-
+          --health-cmd="pg_isready -U postgres -d hub-de-doacoes"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hub-de-doacoes
+      JWT_SECRET: minhasecretachaveforte123
+      TEST_EMAIL: ong1@gmail.com
+      TEST_PASSWORD: 123456
+      CLOUDINARY_CLOUD_NAME: dwebr0cao
+      CLOUDINARY_API_KEY: 895577114474458
+      CLOUDINARY_API_SECRET: 4WGoZX6x5Nn0tbvtHhAxLXU8BF4
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Rodar migrations no banco de teste
+        run: npx prisma migrate deploy
+
+      - name: Executar testes com relatório JUnit
+        run: npm run test:ci
+        continue-on-error: true
+
+      - name: Publicar resultados dos testes
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-test-report
+          path: jest-junit.xml

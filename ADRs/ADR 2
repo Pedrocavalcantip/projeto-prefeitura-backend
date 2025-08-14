@@ -1,0 +1,56 @@
+ADR 2 - Estrutura em Camadas com Middleware, Rotas, Prisma Externo, Mocks, Configs e Server.js
+Date: 2025-07-19
+ Status: Accepted
+Context
+O backend do projeto "hub de doações" requer uma arquitetura limpa, escalável e testável, que favoreça a separação de responsabilidades, facilite a colaboração em equipe e a manutenção contínua. Dada a complexidade de domínios como ONGs, doações, realocações e autenticação JWT, optou-se por uma estrutura clara baseada em camadas.
+Além disso, prisma/, mocks/ e configs/ foram mantidos fora do src/ por serem elementos auxiliares ou globais, enquanto server.js e index.js foram separados para modularização da inicialização do servidor.
+Decision
+A estrutura adotada foi:
+bash
+CopyEdit
+projeto-prefeitura-backend/
+├── prisma/                   # Schema, migrations, seed
+├── mocks/                    # Dados mockados
+├── configs/                  # Configurações reutilizáveis
+├── src/
+│   ├── controllers/          # Interface HTTP
+│   ├── services/             # Regras de negócio
+│   ├── repositories/         # Prisma abstraído
+│   ├── middlewares/          # Autenticação, validações
+│   ├── routes/               # Endpoints da API
+├── tests/                    # Testes automatizados
+├── .env
+├── package.json
+├── index.js                  # Inicializa app
+├── server.js                 # Inicia servidor
+└── README.md
+
+Consequences
+Alta coesão e separação de responsabilidades;
+
+
+Facilita reuso, testes e manutenção;
+
+
+Exige disciplina da equipe para manter as fronteiras entre as camadas;
+
+
+Nova entrada para quem não está habituado à estrutura modularizada.
+
+
+
+Related Decisions
+ADR 1: Prisma
+
+
+ADR 3: JWT
+
+
+References
+https://expressjs.com/pt-br/guide/structure.html
+
+
+https://www.prisma.io/docs
+
+
+https://nodejs.org/en/learn
