@@ -56,7 +56,7 @@ exports.findDoacoesPrestesAVencerService = async () => {
       status: 'ATIVA',
       finalidade: 'DOACAO',
       prazo_necessidade: {
-        lte: new Date(new Date().setDate(new Date().getDate() + 14)) // Vence em até 14 dias
+        lte: new Date(new Date().setDate(new Date().getDate() + 15)) // Vence em até 15 dias
       }
     },
     select: {
