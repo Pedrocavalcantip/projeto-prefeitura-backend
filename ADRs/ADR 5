@@ -1,0 +1,55 @@
+ADR 5 - Uso de Jobs agendados com node-cron para automação de tarefas
+
+Date: 2025-08-13
+Status: Accepted
+
+Context
+
+O sistema precisa executar rotinas automáticas, como:
+
+Finalizar doações e realocações cujo prazo tenha expirado;
+
+Remover registros finalizados há mais de 6 meses.
+
+Essas ações devem ocorrer mesmo sem interação do usuário e sem depender de requisições externas.
+
+Foi necessário escolher uma forma de agendar e executar essas tarefas no ambiente do backend.
+
+Decision
+
+Foi adotado o pacote node-cron para agendamento de tarefas no backend Node.js.
+A configuração inclui:
+
+Definição de jobs que rodam em horários específicos (ex.: todos os dias à meia-noite);
+
+Execução de funções de serviço para aplicar regras de finalização e limpeza;
+
+Log das execuções para acompanhamento.
+
+Consequences
+
+Automação simples e integrada ao próprio backend;
+
+Baixa complexidade de configuração;
+
+Dependência de que o backend esteja em execução contínua para que os jobs sejam disparados;
+
+Em ambientes com múltiplas instâncias, o job rodará em todas, podendo gerar duplicações se não houver controle adicional.
+
+Alternatives Considered
+
+Agendamento externo via serviços como GitHub Actions, AWS Lambda ou cron do sistema: maior confiabilidade em ambientes distribuídos, mas exigiria mais infraestrutura e custo;
+
+Mensageria (ex.: RabbitMQ, BullMQ): útil para alta escala, mas complexidade desnecessária para o escopo atual.
+
+Related Decisions
+
+ADR 1: Prisma
+
+ADR 2: Estrutura em camadas
+
+References
+
+https://www.npmjs.com/package/node-cron
+
+https://crontab.guru/

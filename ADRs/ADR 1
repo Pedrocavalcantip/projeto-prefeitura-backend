@@ -1,0 +1,57 @@
+ADR 1 – Adoção do Prisma como ORM
+Date: 2025-07-19
+ Status: Accepted
+Context
+O projeto backend do sistema "hub de doações" precisava de uma solução moderna para acesso ao banco de dados PostgreSQL, que oferecesse tipagem segura, geração automatizada de migrations e boa integração com o ecossistema JavaScript. A equipe buscava um ORM que facilitasse a manutenção, testes e integração com ferramentas modernas.
+Decision
+Foi adotado o Prisma como ORM principal do projeto. Os principais motivos incluem:
+Integração nativa com PostgreSQL;
+
+
+Tipagem automática e segura com IntelliSense no editor;
+
+
+Ferramentas como Prisma Studio para visualização do banco;
+
+
+Migrations versionadas com histórico;
+
+
+Facilidade de integração com testes unitários e integração contínua.
+
+
+A pasta prisma/ foi posicionada fora do src/, refletindo seu papel como configuração global do projeto, contendo o schema.prisma.
+Consequences
+Tipagem forte melhora segurança e produtividade;
+
+
+Fluxo de dados mais previsível e validado;
+
+
+Requer execução de prisma generate após alterações no schema;
+
+
+Introduz dependência de ferramenta externa ao Node.js puro.
+
+
+Alternatives Considered
+Sequelize: rejeitado por possuir API mais verbosa e menor suporte à tipagem estática.
+
+
+TypeORM: considerado, mas descartado por problemas de manutenção em versões anteriores.
+
+
+Related Decisions
+ADR 2: Estrutura em camadas
+
+
+ADR 3: Autenticação com JWT
+
+
+References
+https://www.prisma.io/docs
+
+
+https://github.com/prisma/prisma
+
+

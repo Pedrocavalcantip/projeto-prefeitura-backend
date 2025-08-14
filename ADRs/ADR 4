@@ -1,0 +1,58 @@
+ADR 4 – Armazenamento de imagens no Cloudinary
+
+Date: 2025-08-13
+Status: Accepted
+
+Context
+
+O projeto exige o upload de imagens (doações, realocações, etc.), com necessidade de:
+
+Armazenamento seguro;
+
+URLs públicas para acesso rápido;
+
+Facilidade de integração com o backend;
+
+Evitar sobrecarregar o servidor com armazenamento local de arquivos.
+
+Soluções locais (armazenar no servidor) aumentariam a complexidade de backup e escalabilidade, e exigiriam mais infraestrutura.
+
+Decision
+
+Foi adotado o Cloudinary como provedor de armazenamento e distribuição de imagens, com integração ao backend via pacote cloudinary e multer-storage-cloudinary.
+
+O fluxo é:
+
+A rota de criação/atualização recebe a imagem como multipart/form-data;
+
+O multer processa o upload e envia direto para o Cloudinary;
+
+O Cloudinary retorna a url pública e metadados;
+
+A URL é salva no banco via Prisma para uso no frontend.
+
+Consequences
+
+Reduz carga e complexidade do backend, que não precisa servir arquivos estáticos;
+
+URLs CDN com carregamento rápido e otimização automática;
+
+Dependência de um serviço externo (Cloudinary);
+
+Necessidade de manter seguras as credenciais no .env.
+
+Alternatives Considered
+
+Armazenamento local: inviável para deploys em nuvem que apagam o sistema de arquivos a cada atualização;
+
+Amazon S3: mais flexível, mas exige configuração mais complexa e custo maior para o escopo atual.
+
+Related Decisions
+
+ADR 3: Autenticação com JWT baseada em ID da ONG
+
+References
+
+https://cloudinary.com/documentation
+
+https://www.npmjs.com/package/multer-storage-cloudinary

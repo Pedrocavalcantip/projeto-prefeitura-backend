@@ -103,8 +103,8 @@ exports.findMinhasRealocacoesAtivasService = async (ongId) => {
       status:     true,
       url_imagem: true,
       criado_em:  true,
-        whatsapp:   true,
-        email:      true
+      whatsapp:   true,
+      email:      true
     },
     orderBy: {
       criado_em: 'desc'   // <-- aqui estava ok, não precisa mudar

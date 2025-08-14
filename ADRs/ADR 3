@@ -1,0 +1,52 @@
+ADR 3 – Autenticação com JWT baseada em ID da ONG
+Date: 2025-07-19
+ Status: Accepted
+Context
+Era necessário um mecanismo de autenticação e autorização leve e compatível com APIs REST para garantir que somente a ONG autenticada pudesse acessar ou modificar seus próprios dados. Não há usuários múltiplos por ONG, portanto a única informação relevante no token é o id_ong.
+Decision
+Foi adotado o uso de JSON Web Tokens (JWT) com os seguintes princípios:
+O backend gera um token com o id_ong no login;
+
+
+Esse token é enviado no header Authorization em cada requisição;
+
+
+Um middleware (validateToken) verifica o token, extrai o id_ong e o anexa a req.id_ong;
+
+
+As rotas e services usam req.id_ong para proteger os dados da ONG.
+
+
+O middleware está aplicado diretamente nas rotas que exigem autenticação.
+Consequences
+Sistema stateless, sem necessidade de sessões ou banco intermediário para autenticação;
+
+
+Token leve e fácil de verificar;
+
+
+Depende da segurança no armazenamento do token no front-end;
+
+
+Não permite múltiplos usuários por ONG.
+
+
+Alternatives Considered
+Sessões com cookies e Redis: mais complexo e desnecessário para o escopo atual;
+
+
+OAuth2: robusto, mas exagerado para o contexto de uma única ONG autenticada por vez.
+
+
+Related Decisions
+ADR 1: Prisma
+
+
+ADR 2: Estrutura em camadas
+
+
+References
+https://jwt.io/
+
+
+https://www.npmjs.com/package/jsonwebtoken
