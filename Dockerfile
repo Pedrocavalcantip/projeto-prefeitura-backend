@@ -12,7 +12,7 @@ COPY . .
 # gera cliente Prisma
 RUN npx prisma generate
 
-EXPOSE 3000
+EXPOSE 3004
 
 # modo dev (hot reload se você usar nodemon no "dev")
 CMD ["npm", "run", "dev"]
