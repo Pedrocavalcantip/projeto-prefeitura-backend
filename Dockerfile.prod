@@ -12,7 +12,7 @@ COPY . .
 # Gera Prisma Client
 RUN npx prisma generate
 
-EXPOSE 3000
+EXPOSE 3004
 
 # Roda migrations e inicia
 CMD sh -c "npx prisma migrate deploy && npm start"
