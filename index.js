@@ -22,7 +22,7 @@ const app = express();
 
 
 // Configura CORS
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: 'http://localhost:8004' }));
 
 app.use(express.json());
 
