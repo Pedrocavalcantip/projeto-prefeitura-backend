@@ -14,8 +14,5 @@ RUN npx prisma generate
 
 EXPOSE 3004
 
-# Configurar variáveis de ambiente para DNS
-ENV NODE_OPTIONS="--dns-result-order=ipv4first"
-
 # Roda migrations e inicia
 CMD sh -c "npx prisma migrate deploy && npm start"
