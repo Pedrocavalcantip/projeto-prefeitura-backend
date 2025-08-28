@@ -2,17 +2,17 @@ FROM node:18
 
 WORKDIR /app
 
-# instala deps a partir dos manifests (cache de build)
 COPY package*.json ./
-RUN npm install
+# Em produção, se você precisa rodar "prisma migrate" na inicialização,
+# mantenha o pacote "prisma" instalado (não use --omit=dev aqui).
+RUN npm ci
 
-# copia o restante do código
 COPY . .
 
-# gera cliente Prisma
+# Gera Prisma Client
 RUN npx prisma generate
 
 EXPOSE 3004
 
-# modo dev (hot reload se você usar nodemon no "dev")
-CMD ["npm", "run", "dev"]
+# Roda migrations e inicia
+CMD sh -c "npx prisma migrate deploy && npm start"

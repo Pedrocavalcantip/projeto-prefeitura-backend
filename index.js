@@ -22,7 +22,7 @@ const app = express();
 
 
 // Configura CORS
-app.use(cors({ origin: 'http://localhost:8004' }));
+app.use(cors({ origin: ['http://vm-cinboraimpactar2.cin.ufpe.br/hubdedoacao', 'http://projetoprefeitura:8004'] }));
 
 app.use(express.json());
 
