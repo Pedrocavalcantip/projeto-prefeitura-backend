@@ -1,29 +1,24 @@
 const axios = require('axios');
 const prisma = require('../config/database.js');
 
-// Configuração do axios para resolver problemas de DNS em containers
-const apiClient = axios.create({
-  timeout: 30000, // 30 segundos de timeout
-  headers: {
-    'Content-Type': 'application/json',
-    'User-Agent': 'axios/1.10.0'
-  },
-  // Configurações adicionais para resolver DNS em containers
-  family: 4, // Força IPv4
-  lookup: false // Desabilita cache de DNS
-});
-
 // Autentica na API da prefeitura
 exports.loginNaApiPrefeitura = async (email_ong, password) => {
   try {
     console.log('🔄 Tentando conectar à API da prefeitura...');
     console.log('📧 Email:', email_ong);
     
-    const response = await apiClient.post(
+    const response = await axios.post(
       'https://bora-impactar-dev.setd.rdmapps.com.br/api/login',
       {
         email: email_ong,
         password
+      },
+      {
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; axios/1.10.0)'
+        }
       }
     );
     
